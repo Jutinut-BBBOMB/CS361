@@ -2,9 +2,9 @@
 ## Project Name
 - Test
 ## Member
-- นายสุทธิพจน์ ประทุมทอง 6609650699
-- นายสุรบดี ผาสุข 6609650707
-https://github.com/SuttipotPrathoumthong
+- นายจุติณัฏฐ์ รัตนะมงคลกุล 6609650228 Github : Jutinut-BBBOMB 
+- นายสุทธิพจน์ ประทุมทอง 6609650699  Github : SuttipotPrathoumthong
+- นายสุรบดี    ผาสุข     6609650707  Github : surabodee-pha
 - 
 ## Problem Statement
 - อธิบายปัญหาหรือความต้องการ (จากธุรกิจ / ชุมชน / องค์กร / โครงการ) 
