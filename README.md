@@ -6,7 +6,7 @@
 https://github.com/SuttipotPrathoumthong
 - 
 ## Problem Statement
-- อธิบายปัญหาหรือความต้องการ (จากธุรกิจ / ชุมชน / องคกร / โครงการ) 
+- อธิบายปัญหาหรือความต้องการ (จากธุรกิจ / ชุมชน / องค์กร / โครงการ) 
 - ผู้ใช้และผู้มีส่วนเกี่ยวข้อง (Stakeholders)
 ## Objectives
 ## Initial Architecture Diagram
