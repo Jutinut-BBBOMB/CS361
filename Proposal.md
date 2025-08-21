@@ -5,6 +5,7 @@
 - นายจุติณัฏฐ์ รัตนะมงคลกุล 6609650228 Github : Jutinut-BBBOMB 
 - นายสุทธิพจน์ ประทุมทอง 6609650699  Github : SuttipotPrathoumthong
 - นายสุรบดี    ผาสุข     6609650707  Github : surabodee-pha
+- นายรพินทร์   นะราช     6609650624 Github : rapinn
 - 
 ## Problem Statement
 - อธิบายปัญหาหรือความต้องการ (จากธุรกิจ / ชุมชน / องค์กร / โครงการ) 
