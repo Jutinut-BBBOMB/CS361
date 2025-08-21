@@ -2,7 +2,9 @@
 ## Project Name
 - Test
 ## Member
-- A B 6609650
+- นายสุทธิพจน์ ประทุมทอง 6609650699
+https://github.com/SuttipotPrathoumthong
+- 
 ## Problem Statement
 - อธิบายปัญหาหรือความต้องการ (จากธุรกิจ / ชุมชน / องคกร / โครงการ) 
 - ผู้ใช้และผู้มีส่วนเกี่ยวข้อง (Stakeholders)
