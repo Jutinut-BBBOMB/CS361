@@ -3,6 +3,7 @@
 - Test
 ## Member
 - นายสุทธิพจน์ ประทุมทอง 6609650699
+- นายสุรบดี ผาสุข 6609650707
 https://github.com/SuttipotPrathoumthong
 - 
 ## Problem Statement
