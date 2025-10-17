@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>แจ้งเรื่องพบของ</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #bc3030;
+      color: #333;
+    }
+
+    form {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 25px;
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+    }
+
+    p.intro {
+      text-align: center;
+      color: #555;
+      margin-bottom: 25px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 16px;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      background-color: #ffd13f;
+      color: black;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: bold;
+      transition: background-color 0.2s;
+    }
+
+    button:hover {
+      background-color: #da8012;
+    }
+  </style>
+</head>
+<body>
+
+  <form id="foundForm">
+    <h1>📦 แจ้งเรื่องพบของ</h1>
+    <p class="intro">กรุณากรอกข้อมูลของที่คุณพบ เพื่อให้เจ้าของสามารถติดต่อกลับได้ค่ะ</p>
+
+    <div class="form-group">
+      <label for="category">หมวดหมู่</label>
+      <select id="category" name="category" required>
+        <option value="">-- เลือกหมวดหมู่ --</option>
+        <option>บัตร</option>
+        <option>โทรศัพท์</option>
+        <option>อุปกรณ์อิเล็กทรอนิกส์</option>
+        <option>เครื่องเขียน</option>
+        <option>อื่น ๆ</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="brand">ยี่ห้อ / เลขบนบัตร (ถ้ามี)</label>
+      <input type="text" id="brand" name="brand" placeholder="เช่น Student ID 6123456">
+    </div>
+
+    <div class="form-group">
+      <label for="details">รายละเอียดเพิ่มเติม</label>
+      <textarea id="details" name="details" rows="4" placeholder="เช่น เจอหูฟังสีดำ หน้าห้องสมุดชั้น 2" required></textarea>
+    </div>
+
+    <div class="form-group">
+      <label for="location">สถานที่ที่พบ</label>
+      <input type="text" id="location" name="location" placeholder="เช่น อาคาร U2" required>
+    </div>
+
+    <div class="form-group">
+      <label for="datetime">วันที่และเวลา</label>
+      <input type="datetime-local" id="datetime" name="datetime" required>
+    </div>
+
+    <button type="button" id="submitBtn">ส่งข้อมูล</button>
+    <p id="status" style="text-align:center;margin-top:10px;"></p>
+  </form>
+
+  <script>
+    async function main() {
+      await liff.init({ liffId: "2008305063-P2NpboxX" });
+
+      if (!liff.isLoggedIn()) liff.login();
+      const profile = await liff.getProfile();
+
+      document.getElementById("submitBtn").onclick = async () => {
+        const data = {
+          name: profile.displayName,
+          userId: profile.userId,
+          category: document.getElementById("category").value,
+          brand: document.getElementById("brand").value,
+          details: document.getElementById("details").value,
+          location: document.getElementById("location").value,
+          datetime: document.getElementById("datetime").value
+        };
+
+        const res = await fetch("https://script.google.com/macros/s/AKfycbxBrtifRvQ2fbRxEq9gDY_RLkAVcN5tsS2ybYJ34GeyzC6S0BR_UyDHSBhygDzkoYnSSw/exec", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+
+        if (res.ok) {
+          document.getElementById("status").innerText = "✅ ส่งข้อมูลเรียบร้อยแล้วค่ะ";
+          liff.sendMessages([{ type: "text", text: "ฉันได้แจ้งพบของหายเรียบร้อยแล้วค่ะ" }]);
+        } else {
+          document.getElementById("status").innerText = "❌ มีข้อผิดพลาดในการส่งข้อมูล";
+        }
+      };
+    }
+
+    main();
+  </script>
+</body>
+</html>
