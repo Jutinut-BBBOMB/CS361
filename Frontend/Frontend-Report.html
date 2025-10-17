@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แบบฟอร์มแจ้งของหาย</title>
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #bc3030;
+            color: #333;
+        }
+
+        form {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 25px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        
+        p.intro {
+            text-align: center;
+            color: #555;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="time"],
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        
+        input[type="file"] {
+            font-size: 16px;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: #ffd13f;
+            color: black;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #da8012;
+        }
+    </style>
+</head>
+<body>
+
+    <form id="lostItemForm">
+        <h1>📝 แบบฟอร์มแจ้งของหาย</h1>
+        <p class="intro">กรุณากรอกข้อมูลให้ครบถ้วนที่สุด<br>เพื่อให้เจ้าหน้าที่ติดตามของให้คุณได้ง่ายขึ้นนะคะ</p>
+
+        <div class="form-group">
+            <label for="itemName">สิ่งของที่คุณหายคืออะไร?</label>
+            <input type="text" id="itemName" name="itemName" placeholder="เช่น กระเป๋าสตางค์, โทรศัพท์, บัตรนักศึกษา" required>
+        </div>
+
+        <div class="form-group">
+            <label for="brand">ยี่ห้อ / หมายเลขบัตร (ถ้ามี)</label>
+            <input type="text" id="brand" name="brand" placeholder="เช่น Apple, Samsonite, 1234-5678-xxxx">
+        </div>
+
+        <div class="form-group">
+            <label for="description">ลักษณะเด่น (สี, รุ่น, ตำหนิ)</label>
+            <textarea id="description" name="description" rows="4" placeholder="เช่น โทรศัพท์สีฟ้า มีรอยขีดด้านหลัง, บัตรมีพวงกุญแจตุ๊กตา" required></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="description">รายละเอียดเพิ่มเติม (ถ้ามี)</label>
+            <textarea id="description" name="description" rows="4" placeholder="เช่น หูฟังมี 1 ข้าง, กุญแจรถ yamaha" required></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="location">สถานที่ที่คาดว่าทำหาย</label>
+            <input type="text" id="location" name="location" placeholder="เช่น ห้องเรียน, โรงอาหาร, ลานจอดรถ, ชั้น 3 หอสมุดป๋วย" required>
+        </div>
+
+        <div class="form-group">
+            <label for="lostDate">วันที่คาดว่าทำหาย</label>
+            <input type="date" id="lostDate" name="lostDate" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="lostTime">เวลาโดยประมาณ</label>
+            <input type="time" id="lostTime" name="lostTime" required>
+        </div>
+
+        <div class="form-group">
+            <label for="itemImage">แนบรูปภาพ (ถ้ามี)</label>
+            <input type="file" id="itemImage" name="itemImage" accept="image/*">
+        </div>
+
+        <button type="submit">ส่งข้อมูลแจ้งของหาย</button>
+    </form>
+
+</body>
+</html>
