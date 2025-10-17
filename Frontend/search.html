@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>ค้นหาของที่หาย</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    input, select { width: 100%; margin-bottom: 10px; padding: 8px; border-radius: 8px; border: 1px solid #ccc; }
+    button { background-color: #0099FF; color: white; padding: 10px; border: none; border-radius: 8px; width: 100%; font-size: 16px; }
+    .item { border: 1px solid #ccc; padding: 10px; border-radius: 8px; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <h2>🔍 ค้นหาของที่หาย</h2>
+
+  <label>เลือกหมวดหมู่:</label>
+  <select id="category">
+    <option value="">ทั้งหมด</option>
+    <option>บัตร</option>
+    <option>โทรศัพท์</option>
+    <option>อุปกรณ์อิเล็กทรอนิกส์</option>
+    <option>เครื่องเขียน</option>
+    <option>อื่น ๆ</option>
+  </select>
+
+  <label>ค้นหาคำสำคัญ (เช่น สี, ยี่ห้อ):</label>
+  <input type="text" id="keyword" placeholder="เช่น iPhone, สีดำ">
+
+  <button id="searchBtn">ค้นหา</button>
+
+  <div id="results"></div>
+
+  <script>
+    async function main() {
+      await liff.init({ liffId: "2008305063-P2NpboxX" })
+      if (!liff.isLoggedIn()) liff.login()
+
+      document.getElementById("searchBtn").onclick = async () => {
+        const category = document.getElementById("category").value
+        const keyword = document.getElementById("keyword").value
+
+        const url = "https://script.google.com/macros/s/AKfycbxBrtifRvQ2fbRxEq9gDY_RLkAVcN5tsS2ybYJ34GeyzC6S0BR_UyDHSBhygDzkoYnSSw/exec?search=1"
+        const res = await fetch(url)
+        const items = await res.json()
+
+        const filtered = items.filter(i =>
+          (!category || i.category === category) &&
+          (!keyword || i.details.includes(keyword) || i.brand.includes(keyword))
+        )
+
+        const list = filtered.map(i => `
+          <div class="item">
+            <b>หมวดหมู่:</b> ${i.category}<br>
+            <b>รายละเอียด:</b> ${i.details}<br>
+            <b>สถานที่:</b> ${i.location}<br>
+            <b>วันที่:</b> ${i.datetime}<br>
+            <button onclick="contact('${i.id}')">ติดต่อเจ้าหน้าที่</button>
+          </div>
+        `).join("")
+
+        document.getElementById("results").innerHTML = list || "❌ ไม่พบข้อมูลที่ตรงกัน"
+      }
+    }
+
+    function contact(id) {
+      liff.sendMessages([
+        { type: "text", text: `ฉันต้องการติดต่อเจ้าหน้าที่เกี่ยวกับของหมายเลข ${id}` }
+      ])
+      //liff.closeWindow()
+    }
+
+    main()
+  </script>
+</body>
+</html>

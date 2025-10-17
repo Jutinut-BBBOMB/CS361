@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แจ้งของหาย</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body {
+            font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #bc3030;
+        }
+
+        form {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 25px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        h1 { text-align: center; color: #2c3e50; }
+        p.intro { text-align: center; color: #555; margin-bottom: 25px; }
+        .form-group { margin-bottom: 20px; }
+
+        label { display: block; margin-bottom: 8px; font-weight: bold; }
+        input, textarea, select {
+            width: 100%; padding: 12px; border: 1px solid #ccc;
+            border-radius: 4px; font-size: 16px; box-sizing: border-box;
+        }
+        input[type="file"] { font-size: 16px; }
+        button {
+            width: 100%; padding: 15px;
+            background-color: #ffd13f; color: black;
+            border: none; border-radius: 4px;
+            cursor: pointer; font-size: 18px; font-weight: bold;
+        }
+        button:hover { background-color: #da8012; }
+        #status { text-align: center; margin-top: 15px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <form id="lostItemForm">
+        <h1>📝 แบบฟอร์มแจ้งของหาย</h1>
+        <p class="intro">กรุณากรอกข้อมูลให้ครบถ้วนเพื่อให้เจ้าหน้าที่ช่วยตามของให้คุณได้ค่ะ</p>
+
+        <div class="form-group">
+            <label for="itemName">สิ่งของที่คุณหายคืออะไร?</label>
+            <input type="text" id="itemName" name="itemName" placeholder="เช่น กระเป๋าสตางค์, โทรศัพท์" required>
+        </div>
+
+        <div class="form-group">
+            <label for="brand">ยี่ห้อ / หมายเลขบัตร (ถ้ามี)</label>
+            <input type="text" id="brand" name="brand" placeholder="เช่น Apple, Samsonite, 1234-5678-xxxx">
+        </div>
+
+        <div class="form-group">
+            <label for="description">ลักษณะเด่น / รายละเอียดเพิ่มเติม</label>
+            <textarea id="description" name="description" rows="4" placeholder="เช่น โทรศัพท์สีฟ้า มีรอยขีดด้านหลัง" required></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="location">สถานที่ที่คาดว่าทำหาย</label>
+            <input type="text" id="location" name="location" placeholder="เช่น ห้องเรียน, โรงอาหาร, ชั้น 3 หอสมุดป๋วย" required>
+        </div>
+
+        <div class="form-group">
+            <label for="lostDate">วันที่คาดว่าทำหาย</label>
+            <input type="date" id="lostDate" name="lostDate" required>
+        </div>
+
+        <div class="form-group">
+            <label for="lostTime">เวลาโดยประมาณ</label>
+            <input type="time" id="lostTime" name="lostTime" required>
+        </div>
+
+        <div class="form-group">
+            <label for="itemImage">แนบรูปภาพ (ถ้ามี)</label>
+            <input type="file" id="itemImage" name="itemImage" accept="image/*">
+        </div>
+
+        <button type="button" id="submitBtn">ส่งข้อมูลแจ้งของหาย</button>
+        <p id="status"></p>
+    </form>
+
+    <script>
+        async function main() {
+            await liff.init({ liffId: "2008305063-P2NpboxX" }); // 🔹 เปลี่ยนเป็น LIFF ID ของคุณ
+            if (!liff.isLoggedIn()) {
+                liff.login({ redirectUri: window.location.href });
+                return;
+            }
+
+            const profile = await liff.getProfile();
+
+            document.getElementById("submitBtn").onclick = async () => {
+                const formData = {
+                    type: "lost", // ใช้แยกประเภทใน backend
+                    name: profile.displayName,
+                    userId: profile.userId,
+                    itemName: document.getElementById("itemName").value,
+                    brand: document.getElementById("brand").value,
+                    description: document.getElementById("description").value,
+                    location: document.getElementById("location").value,
+                    lostDate: document.getElementById("lostDate").value,
+                    lostTime: document.getElementById("lostTime").value
+                };
+
+                const res = await fetch("https://script.google.com/macros/s/AKfycbxBrtifRvQ2fbRxEq9gDY_RLkAVcN5tsS2ybYJ34GeyzC6S0BR_UyDHSBhygDzkoYnSSw/exec", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(formData)
+                });
+
+                if (res.ok) {
+                    document.getElementById("status").innerText = "✅ แจ้งของหายเรียบร้อยแล้วค่ะ";
+                    await liff.sendMessages([
+                        { type: "text", text: "ฉันได้แจ้งของหายเรียบร้อยแล้วค่ะ" }
+                    ]);
+                    //liff.closeWindow();
+                } else {
+                    document.getElementById("status").innerText = "❌ มีข้อผิดพลาดในการส่งข้อมูล";
+                }
+            };
+        }
+        main();
+    </script>
+</body>
+</html>

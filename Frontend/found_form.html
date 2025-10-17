@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>แจ้งพบของหาย</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    input, textarea, select { width: 100%; margin-bottom: 10px; padding: 8px; border-radius: 8px; border: 1px solid #ccc; }
+    button { background-color: #06C755; color: white; padding: 10px; border: none; border-radius: 8px; width: 100%; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h2>📦 แจ้งพบของหาย</h2>
+
+  <form id="foundForm">
+    <label>หมวดหมู่:</label>
+    <select id="category">
+      <option>บัตร</option>
+      <option>โทรศัพท์</option>
+      <option>อุปกรณ์อิเล็กทรอนิกส์</option>
+      <option>เครื่องเขียน</option>
+      <option>อื่น ๆ</option>
+    </select>
+
+    <label>ยี่ห้อ / เลขบนบัตร (ถ้ามี):</label>
+    <input type="text" id="brand" placeholder="เช่น Student ID 6123456">
+
+    <label>รายละเอียดเพิ่มเติม:</label>
+    <textarea id="details" placeholder="เช่น เจอหูฟังสีดำ หน้าห้องสมุดชั้น 2"></textarea>
+
+    <label>สถานที่ที่พบ:</label>
+    <input type="text" id="location" placeholder="เช่น อาคาร U2">
+
+    <label>วันที่และเวลา:</label>
+    <input type="datetime-local" id="datetime">
+
+    <button type="button" id="submitBtn">ส่งข้อมูล</button>
+  </form>
+
+  <p id="status"></p>
+
+  <script>
+    async function main() {
+      await liff.init({ liffId: "2008305063-P2NpboxX" })
+
+      if (!liff.isLoggedIn()) liff.login()
+      const profile = await liff.getProfile()
+      console.log("User:", profile.displayName)
+
+      document.getElementById("submitBtn").onclick = async () => {
+        const data = {
+          name: profile.displayName,
+          userId: profile.userId,
+          category: document.getElementById("category").value,
+          brand: document.getElementById("brand").value,
+          details: document.getElementById("details").value,
+          location: document.getElementById("location").value,
+          datetime: document.getElementById("datetime").value
+        }
+
+        const res = await fetch("https://script.google.com/macros/s/AKfycbxBrtifRvQ2fbRxEq9gDY_RLkAVcN5tsS2ybYJ34GeyzC6S0BR_UyDHSBhygDzkoYnSSw/exec", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        })
+
+        if (res.ok) {
+          document.getElementById("status").innerText = "✅ ส่งข้อมูลเรียบร้อยแล้วค่ะ"
+          liff.sendMessages([
+            { type: "text", text: "ฉันได้แจ้งพบของหายเรียบร้อยแล้วค่ะ" }
+          ])
+          //liff.closeWindow()
+        } else {
+          document.getElementById("status").innerText = "❌ มีข้อผิดพลาดในการส่งข้อมูล"
+        }
+      }
+    }
+
+    main()
+  </script>
+</body>
+</html>
