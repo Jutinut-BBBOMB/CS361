@@ -320,162 +320,153 @@
     </div>
   </div>
 
-  <script>
-    const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwIFuTgpOLX0ZBdzynd5KkU3ffsWLakRwkskfgbDKEiwHoJK8pqDgki43aEMBW3VUob/exec";
+<script>
+    // ⭐️ 1. ใส่ URL ของ Lambda Search Function ของคุณ
+    const LAMBDA_SEARCH_URL = "https://vnzvfki24e5re2d6fh3k6bmq2a0ddolc.lambda-url.us-east-1.on.aws/";
+    const LIFF_ID = "2008305063-P2NpboxX";
 
-    async function loadAllItemsFromSheet() {
-      try {
-        const response = await fetch(GOOGLE_SHEET_URL);
-        const result = await response.json();
-        
-        if (result.status === 'success') {
-          return result.data || [];
-        }
-        return [];
-      } catch (error) {
-        console.error('Failed to load from Sheets:', error);
-        return [];
-      }
-    }
+    // ⭐️ 2. อ้างอิง Element
+    // ‼️ ตรวจสอบ ID ปุ่มค้นหาใน HTML ของคุณ (อาจจะเป็น 'searchBtn' หรือ 'searchButton')
+    const searchButton = document.getElementById("searchBtn"); 
+    const resultsContainer = document.getElementById("adminTableBody");
+    const notFoundBox = document.getElementById("notFoundBox");
+    const container = document.getElementById("adminTableContainer");
 
-    function isExpiring(item) {
-      if (!item.date) return false;
-      const foundDate = new Date(item.date);
-      const now = new Date();
-      const diffTime = now - foundDate;
-      const diffDays = diffTime / (1000 * 60 * 60 * 24);
-      return diffDays >= 60 && diffDays < 90;
-    }
-
-    function isExpired(item) {
-      if (!item.date) return false;
-      const foundDate = new Date(item.date);
-      const now = new Date();
-      const diffTime = now - foundDate;
-      const diffDays = diffTime / (1000 * 60 * 60 * 24);
-      return diffDays >= 90;
-    }
-
-    function getStatusClass(item) {
-      if (isExpired(item)) return 'expired';
-      if (isExpiring(item)) return 'expiring';
-      return item.status === "received" ? "received" : "waiting";
-    }
-
-    function getStatusText(item) {
-      if (isExpired(item)) return 'หมดอายุแล้ว';
-      if (isExpiring(item)) return 'ใกล้ถึง 3 เดือน';
-      const waitingText = item.source === 'lost' ? 'สูญหาย' : 'รอรับคืน';
-      return item.status === 'received' ? 'ได้คืนแล้ว' : waitingText;
-    }
-
-    // ฟังก์ชันแปลงวันที่และเวลา
-    function formatDate(isoString) {
-      if (!isoString) return '-';
-      try {
-        const date = new Date(isoString);
-        if (isNaN(date.getTime())) return '-';
-        
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-      } catch (e) {
-        return '-';
-      }
-    }
-
-    function formatTime(isoString) {
-      if (!isoString) return '-';
-      try {
-        const date = new Date(isoString);
-        if (isNaN(date.getTime())) return '-';
-        
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        return `${hours}:${minutes}`;
-      } catch (e) {
-        return '-';
-      }
-    }
-
+    // ⭐️ 3. ฟังก์ชันแสดงผล (เวอร์ชันที่รวมคอลัมน์แล้ว)
     function renderAdminTable(items) {
-      const tableBody = document.getElementById("adminTableBody");
-      if (!tableBody) return;
+      const tbody = document.getElementById("adminTableBody");
+      if (!tbody) return;
 
-      if (!items.length) {
-        tableBody.innerHTML = `<tr><td colspan="13" style="text-align:center;">ยังไม่มีรายการ</td></tr>`;
-        return;
+      const foundItems = items.filter(item => item.item_type === 'FOUND_ITEM');
+      foundItems.sort((a, b) => (b.reportTimestamp || '').localeCompare(a.reportTimestamp || ''));
+
+      if (foundItems.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;">ไม่พบข้อมูล</td></tr>`;
+          notFoundBox.style.display = 'block';
+          container.style.display = 'block';
+          return;
       }
 
-      tableBody.innerHTML = items.map((item, index) => `
-        <tr>
-          <td data-label="ลำดับ">${index + 1}</td>
-          <td data-label="ประเภทการแจ้ง (Type)">
-            <span style="display:inline-block;padding:4px 8px;border-radius:4px;font-weight:600;background-color:${item.type === 'พบของ' ? '#dcfce7' : '#fef3c7'};color:${item.type === 'พบของ' ? '#166534' : '#92400e'};">
-              ${item.type}
-            </span>
-          </td>
-          <td data-label="หมวดหมู่ / สิ่งของที่หาย (Category)">${item.category}</td>
-          <td data-label="รูปภาพ (Picture)">
-            ${item.itemImage ? `<img src="${item.itemImage}" alt="รูปภาพ" style="width:50px;height:50px;object-fit:cover;">` : "ไม่มี"}
-          </td>
-          <td data-label="ยี่ห้อ / ชื่อในบัตร (Brand)">${item.brand || "-"}</td>
-          <td data-label="รุ่น / เลขบัตร (Model)">${item.details || "-"}</td>
-          <td data-label="รายละเอียดเพิ่มเติม (More Details)">${item.details || "-"}</td>
-          <td data-label="วันที่ (Date)">${formatDate(item.date)}</td>
-          <td data-label="เวลา (Time)">${formatTime(item.time)}</td>
-          <td data-label="สถานที่พบ (Location)">${item.location || "-"}</td>
-          <td data-label="รายละเอียดผู้แจ้ง (Reporter Details)">
-            <div><strong>ชื่อ:</strong> ${item.reporterName || "-"}</div>
-            <div><strong>โทร:</strong> ${item.reporterPhone || "-"}</div>
-            <div><strong>รหัสนักศึกษา:</strong> ${item.reporterStudentId || "-"}</div>
-          </td>
-          <td data-label="การจัดเก็บและครบกำหนด (Record)">
-            <span style="color:#6b7280;">-</span>
-          </td>
-          <td data-label="สถานะ (Status)">
-            <span class="status ${getStatusClass(item)}">${getStatusText(item)}</span>
-          </td>
-        </tr>
-      `).join("");
+      notFoundBox.style.display = 'none';
+      
+      tbody.innerHTML = foundItems.map((item, index) => {
+        
+        // --- ✅✅✅ หัวใจของการแก้ไข: Logic การรวม BrandInfo ---
+        let displayBrandInfo = '';
+        if (item.brandInfo) {
+            // 1. ถ้าเป็น "ของใหม่" ให้ใช้ brandInfo
+            displayBrandInfo = item.brandInfo;
+        } else {
+            // 2. ถ้าเป็น "ของเก่า" (เช่นในรูป) ให้รวม 2 field เดิม
+            const oldBrand = item.brandName || '';
+            const oldId = item.itemIdNumber || '';
+            
+            if (oldBrand && oldId) {
+                displayBrandInfo = `${oldBrand} (${oldId})`;
+            } else {
+                displayBrandInfo = oldBrand || oldId;
+            }
+        }
+        // --- (จบ Logic) ---
+
+        const statusClassMap = { 'found_reported': 'waiting', 'claimed': 'received', 'expired': 'expired' };
+        const statusTextMap = { 'found_reported': 'รอรับคืน', 'claimed': 'ได้คืนแล้ว', 'expired': 'หมดอายุแล้ว' };
+        const status = item.status || 'found_reported';
+
+        // ‼️ สังเกตว่า HTML ตารางนี้ถูกแก้ไขแล้ว ‼️
+        return `
+          <tr>
+            <td data-label="ลำดับ">${index + 1}</td>
+            <td data-label="ประเภทการแจ้ง">
+              <span style="display:inline-block;padding:4px 8px;border-radius:4px;font-weight:600;background-color:#dcfce7;color:#166534;">
+                พบของ
+              </span>
+            </td>
+            <td data-label="หมวดหมู่">${item.category || "-"}</td>
+            <td data-label="รูปภาพ">
+              ${item.imageUrl ? `<a href="${item.imageUrl}" target="_blank"><img src="${item.imageUrl}" alt="item" style="width:50px;height:50px;object-fit:cover;"></a>` : 'ไม่มี'}
+            </td>
+            
+            <td data-label="ยี่ห้อ/รุ่น/รหัส">${displayBrandInfo || "-"}</td>
+            
+            <td data-label="รายละเอียดเพิ่มเติม">${item.details || "-"}</td>
+            <td data-label="วันที่พบ">${item.foundDate || "-"}</td>
+            <td data-label="เวลาที่พบ">${item.foundTime || "-"}</td>
+            <td data-label="สถานที่พบ">${item.foundLocation || "-"}</td>
+            <td data-label="ผู้แจ้ง">****</td>
+            <td data-label="Case ID">
+              <span style="color:#6b7280;font-weight:bold;">${item.case_id || 'N/A'}</span>
+            </td>
+            <td data-label="สถานะ">
+              <span class="status ${statusClassMap[status] || 'waiting'}">${statusTextMap[status] || 'รอรับคืน'}</span>
+            </td>
+          </tr>
+        `;
+      }).join("");
     }
 
-      document.getElementById("searchBtn").addEventListener("click", async function () {
-        const itemName = document.getElementById("searchItemName").value.trim().toLowerCase();
-        const location = document.getElementById("searchLocation").value.trim().toLowerCase();
-        const date = document.getElementById("searchDate").value;
-        const details = document.getElementById("searchDetails").value.trim().toLowerCase();
+    // ⭐️ 4. ฟังก์ชันเรียก Lambda
+    async function fetchFromLambda(payload) {
+      const tbody = document.getElementById("adminTableBody");
+      
+      tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;">กำลังค้นหา...</td></tr>`; // ‼️ ลด colspan เหลือ 12
+      notFoundBox.style.display = "none";
+      container.style.display = "block";
+      if(searchButton) searchButton.disabled = true;
 
-        const all = await loadAllItemsFromSheet();
-        const results = all.filter(item => {
-          const matchBasic = 
-            (!itemName || [item.category, item.brand, item.details].some(v => (v || '').toLowerCase().includes(itemName))) &&
-            (!location || (item.location || '').toLowerCase().includes(location)) &&
-            (!date || item.date === date) &&
-            (!details || (item.details || '').toLowerCase().includes(details));
+      try {
+        const response = await fetch(LAMBDA_SEARCH_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
 
-          return matchBasic;
-        });      const container = document.getElementById("adminTableContainer");
-      const notFound = document.getElementById("notFoundBox");
-      if (results.length > 0) {
-        renderAdminTable(results);
-        container.style.display = "block";
-        if (notFound) notFound.style.display = "none";
-      } else {
-        document.getElementById("adminTableBody").innerHTML = "";
-        container.style.display = "block";
-        if (notFound) notFound.style.display = "block";
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.error || `HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+
+        if (result.status === 'success' && result.count > 0) {
+          renderAdminTable(result.items); // เรียกฟังก์ชันแสดงผล
+        } else {
+          renderAdminTable([]); // ไม่พบข้อมูล
+        }
+      } catch (error) {
+        console.error('Error fetching search results:', error);
+        tbody.innerHTML = `<tr><td colspan="12" style="color:red; text-align:center;">เกิดข้อผิดพลาด: ${error.message}</td></tr>`; // ‼️ ลด colspan เหลือ 12
+      } finally {
+        if(searchButton) searchButton.disabled = false;
       }
+    }
+
+    // ⭐️ 5. Event Listener (ลบของเก่าทิ้ง)
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        if (searchButton) {
+            searchButton.addEventListener('click', async () => {
+                // ดึงค่าจากฟอร์ม
+                const itemName = document.getElementById("searchItemName").value.trim();
+                const location = document.getElementById("searchLocation").value.trim();
+                const date = document.getElementById("searchDate").value;
+                const details = document.getElementById("searchDetails").value.trim();
+
+                // รวมช่องค้นหาเป็น 'keyword' ช่องเดียว
+                const keyword = itemName || details;
+
+                const payload = {
+                    search_mode: 'user', // บังคับเป็น 'user'
+                    keyword: keyword || null,
+                    location: location || null,
+                    date: date || null
+                };
+
+                // เรียก API
+                await fetchFromLambda(payload);
+            });
+        }
     });
-
-    (async function init() {
-      const all = await loadAllItemsFromSheet();
-      if (all.length) {
-        renderAdminTable(all);
-        document.getElementById("adminTableContainer").style.display = "block";
-      }
-    })();
-  </script>
+</script>
 </body>
 </html>
