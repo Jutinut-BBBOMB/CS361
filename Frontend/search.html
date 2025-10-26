@@ -4,137 +4,478 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ค้นหาของสูญหาย</title>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       margin: 0;
       padding: 20px;
       background-color: #bc3030;
       color: #333;
     }
-
-    .search-box {
-      max-width: 600px;
+    .container {
+      max-width: 1400px;
       margin: 0 auto;
-      padding: 25px;
-      background-color: #ffffff;
+      background: #fff;
       border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      overflow-x: auto;
     }
-
     h1 {
       text-align: center;
       color: #2c3e50;
+      margin-top: 0;
     }
-
-    .form-group {
-      margin-bottom: 20px;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: bold;
-    }
-
-    input, select {
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 6px; font-weight: bold; }
+    input, select, button {
       width: 100%;
-      padding: 12px;
+      padding: 10px;
+      font-size: 16px;
       border: 1px solid #ccc;
       border-radius: 4px;
-      font-size: 16px;
+      box-sizing: border-box;
     }
-
     button {
-      width: 100%;
-      padding: 15px;
       background-color: #ffd13f;
       color: black;
-      border: none;
-      border-radius: 4px;
       cursor: pointer;
-      font-size: 18px;
       font-weight: bold;
       transition: background-color 0.2s;
     }
+    button:hover { background-color: #da8012; }
 
-    button:hover {
-      background-color: #da8012;
+    /* ตาราง Desktop */
+    .table-wrapper { 
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    table {
+      width: 100%;
+      min-width: 1300px;
+      border-collapse: collapse;
+      margin-top: 20px;
+      table-layout: auto;
+    }
+    table th, table td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+      vertical-align: top;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      hyphens: auto;
+    }
+    table th {
+      background-color: #f9f9f9;
+      font-weight: bold;
+      line-height: 1.4;
+      white-space: normal;
     }
 
-    .item {
-      border: 1px solid #ccc;
-      padding: 15px;
-      border-radius: 8px;
-      margin-top: 15px;
-      background: #fdfdfd;
+    #adminTableContainer table th:first-child {
+      white-space: nowrap;
+    }
+    .status {
+      font-weight: bold;
+      padding: 5px 10px;
+      border-radius: 4px;
+      display: inline-block;
+      white-space: nowrap;
+    }
+    .status.waiting { background-color: #28a745; color: #fff; }
+    .status.received { background-color: #007bff; color: #fff; }
+    .status.expiring { background-color: #ffa500; color: #fff; }
+    .status.expired  { background-color: #dc3545; color: #fff; }
+
+    input[type="date"], input[type="time"] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 44px;
+      padding: 10px 12px;
+      font-size: 16px;
+      line-height: 1.2;
+    }
+    input[type="date"]::-webkit-date-and-time-value,
+    input[type="time"]::-webkit-date-and-time-value {
+      text-align: left;
+    }
+
+    /* ========== MOBILE ONLY ========== */
+    @media (max-width: 768px) {
+      body { padding: 12px; }
+      .container {
+        padding: 16px;
+        overflow-x: visible;
+      }
+
+      .form-group { margin-bottom: 12px; }
+
+      #adminTableContainer {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 20px auto 0;
+        width: 100%;
+        max-width: 100%;
+      }
+      #adminTableContainer h2 {
+        text-align: center;
+        width: 100%;
+        margin-bottom: 12px;
+      }
+
+      #adminTableContainer colgroup { display: none; }
+
+      #adminTableContainer .table-wrapper {
+        width: 100%;
+        max-width: 100%;
+        padding: 0;
+        overflow: visible;
+        display: flex;
+        justify-content: center;
+      }
+
+      #adminTableContainer table {
+        display: block;
+        width: 100% !important;
+        min-width: auto;
+        max-width: 460px;
+        margin: 0 auto;
+        border-collapse: separate;
+        border-spacing: 0;
+      }
+      
+      #adminTableContainer thead { display: none; }
+      #adminTableContainer tbody { display: block; width: 100%; }
+
+      #adminTableContainer tbody tr {
+        display: block;
+        width: 100%;
+        margin: 0 auto 14px;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 12px 14px;
+        box-sizing: border-box;
+      }
+
+      #adminTableContainer tbody td {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        border: none;
+        border-bottom: 1px solid #eee;
+        padding: 8px 0;
+        text-align: left;
+        white-space: normal;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+      }
+      #adminTableContainer tbody td:last-child { border-bottom: none; }
+
+      #adminTableContainer tbody td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #666;
+        margin-right: 8px;
+        min-width: 130px;
+        max-width: 130px;
+        flex-shrink: 0;
+        white-space: normal;
+        word-break: break-word;
+        line-height: 1.3;
+      }
+
+      #adminTableContainer td[data-label^="รูปภาพ"] img,
+      #adminTableContainer td[data-label*="Picture"] img {
+        max-width: 72px;
+        max-height: 72px;
+        object-fit: cover;
+      }
+
+      #adminTableContainer td[data-label^="สถานะ"] .status,
+      #adminTableContainer td[data-label*="Status"] .status {
+        display: inline-block;
+        padding: 6px 10px;
+      }
+
+      #adminTableContainer td[data-label^="รายละเอียดผู้แจ้ง"],
+      #adminTableContainer td[data-label*="Reporter Details"] {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      #adminTableContainer td[data-label^="รายละเอียดผู้แจ้ง"]::before,
+      #adminTableContainer td[data-label*="Reporter Details"]::before {
+        margin-bottom: 8px;
+      }
+
+      #adminTableContainer td[data-label^="รายละเอียดผู้แจ้ง"] > div,
+      #adminTableContainer td[data-label*="Reporter Details"] > div {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        padding: 4px 0;
+        border-bottom: 1px solid #f0f0f0;
+      }
+
+      #adminTableContainer td[data-label^="รายละเอียดผู้แจ้ง"] > div:last-child,
+      #adminTableContainer td[data-label*="Reporter Details"] > div:last-child {
+        border-bottom: none;
+      }
+
+      #adminTableContainer td[data-label^="รายละเอียดผู้แจ้ง"] strong,
+      #adminTableContainer td[data-label*="Reporter Details"] strong {
+        color: #666;
+        font-weight: 600;
+        min-width: 100px;
+      }
+
+      #notFoundBox {
+        width: 100%;
+        max-width: 460px;
+        margin: 12px auto 0;
+        text-align: center;
+      }
     }
   </style>
 </head>
 <body>
+  <div class="container">
+    <div class="section" id="searchSection">
+      <h1>🔍 ค้นหาของหาย</h1>
+      <div class="form-group">
+        <label for="searchItemName">ชื่อสิ่งของ</label>
+        <input type="text" id="searchItemName" placeholder="เช่น กระเป๋า, โทรศัพท์">
+      </div>
+      <div class="form-group">
+        <label for="searchLocation">สถานที่</label>
+        <input type="text" id="searchLocation" placeholder="เช่น อาคาร SC3, โรงอาหาร SC">
+      </div>
+      <div class="form-group">
+        <label for="searchDate">วันที่</label>
+        <input type="date" id="searchDate">
+      </div>
+      <div class="form-group">
+        <label for="searchDetails">รายละเอียดเพิ่มเติม</label>
+        <input type="text" id="searchDetails" placeholder="เช่น สีดำ, มีสติ๊กเกอร์ติด">
+      </div>
+      <button id="searchBtn">ค้นหา</button>
+      
 
-  <div class="search-box">
-    <h1>🔍 ค้นหาของสูญหาย</h1>
-
-    <div class="form-group">
-      <label for="category">เลือกหมวดหมู่:</label>
-      <select id="category">
-        <option value="">ทั้งหมด</option>
-        <option>บัตร</option>
-        <option>โทรศัพท์</option>
-        <option>อุปกรณ์อิเล็กทรอนิกส์</option>
-        <option>เครื่องเขียน</option>
-        <option>อื่น ๆ</option>
-      </select>
+      <div style="margin-top: 20px;">
+        <a href="lost.html" style="text-decoration: none;">
+          <button style="width: 100%; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; background-color: #ffd13f; color: black; cursor: pointer; font-weight: bold; transition: background-color 0.2s;">
+            แจ้งของหาย
+          </button>
+        </a>
+      </div>
     </div>
 
-    <div class="form-group">
-      <label for="keyword">ค้นหาคำสำคัญ (เช่น สี, ยี่ห้อ):</label>
-      <input type="text" id="keyword" placeholder="เช่น iPhone, สีดำ">
-    </div>
+    <div id="adminTableContainer" style="margin-top:20px; display:none;">
+      <h2>📋 ผลการค้นหา</h2>
+      <div class="table-wrapper">
+        <table>
+          <colgroup>
+            <col style="width:80px">
+            <col style="width:120px">
+            <col style="width:140px">
+            <col style="width:100px">
+            <col style="width:140px">
+            <col style="width:140px">
+            <col style="width:180px">
+            <col style="width:120px">
+            <col style="width:100px">
+            <col style="width:140px">
+            <col style="width:180px">
+            <col style="width:160px">
+            <col style="width:120px">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>ลำดับ</th>
+              <th>ประเภทการแจ้ง (Type)</th>
+              <th>หมวดหมู่ / สิ่งของที่หาย (Category)</th>
+              <th>รูปภาพ (Picture)</th>
+              <th>ยี่ห้อ / ชื่อในบัตร (Brand)</th>
+              <th>รุ่น / เลขบัตร (Model)</th>
+              <th>รายละเอียดเพิ่มเติม (More Details)</th>
+              <th>วันที่ (Date)</th>
+              <th>เวลา (Time)</th>
+              <th>สถานที่พบ (Location)</th>
+              <th>รายละเอียดผู้แจ้ง (Reporter Details)</th>
+              <th>การจัดเก็บและครบกำหนด (Record)</th>
+              <th>สถานะ (Status)</th>
+            </tr>
+          </thead>
+          <tbody id="adminTableBody"></tbody>
+        </table>
+      </div>
 
-    <button id="searchBtn">ค้นหา</button>
-    <div id="results"></div>
+      <div id="notFoundBox" style="display:none; margin-top:16px; text-align:center;">
+        <p style="color:#b22222; font-weight:bold;">❌ ไม่พบข้อมูลที่ตรงกัน</p>
+      </div>
+    </div>
   </div>
 
   <script>
-    async function main() {
-      await liff.init({ liffId: "2008305063-P2NpboxX" });
-      if (!liff.isLoggedIn()) liff.login();
+    const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwIFuTgpOLX0ZBdzynd5KkU3ffsWLakRwkskfgbDKEiwHoJK8pqDgki43aEMBW3VUob/exec";
 
-      document.getElementById("searchBtn").onclick = async () => {
-        const category = document.getElementById("category").value;
-        const keyword = document.getElementById("keyword").value;
-
-        const url = "https://script.google.com/macros/s/AKfycbxBrtifRvQ2fbRxEq9gDY_RLkAVcN5tsS2ybYJ34GeyzC6S0BR_UyDHSBhygDzkoYnSSw/exec?search=1";
-        const res = await fetch(url);
-        const items = await res.json();
-
-        const filtered = items.filter(i =>
-          (!category || i.category === category) &&
-          (!keyword || i.details.includes(keyword) || i.brand.includes(keyword))
-        );
-
-        const list = filtered.map(i => `
-          <div class="item">
-            <b>หมวดหมู่:</b> ${i.category}<br>
-            <b>รายละเอียด:</b> ${i.details}<br>
-            <b>สถานที่:</b> ${i.location}<br>
-            <b>วันที่:</b> ${i.datetime}<br>
-            <button onclick="contact('${i.id}')">📞 ติดต่อเจ้าหน้าที่</button>
-          </div>
-        `).join("");
-
-        document.getElementById("results").innerHTML = list || "❌ ไม่พบข้อมูลที่ตรงกัน";
-      };
+    async function loadAllItemsFromSheet() {
+      try {
+        const response = await fetch(GOOGLE_SHEET_URL);
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+          return result.data || [];
+        }
+        return [];
+      } catch (error) {
+        console.error('Failed to load from Sheets:', error);
+        return [];
+      }
     }
 
-    function contact(id) {
-      liff.sendMessages([{ type: "text", text: `ฉันต้องการติดต่อเจ้าหน้าที่เกี่ยวกับของหมายเลข ${id}` }]);
+    function isExpiring(item) {
+      if (!item.date) return false;
+      const foundDate = new Date(item.date);
+      const now = new Date();
+      const diffTime = now - foundDate;
+      const diffDays = diffTime / (1000 * 60 * 60 * 24);
+      return diffDays >= 60 && diffDays < 90;
     }
 
-    main();
+    function isExpired(item) {
+      if (!item.date) return false;
+      const foundDate = new Date(item.date);
+      const now = new Date();
+      const diffTime = now - foundDate;
+      const diffDays = diffTime / (1000 * 60 * 60 * 24);
+      return diffDays >= 90;
+    }
+
+    function getStatusClass(item) {
+      if (isExpired(item)) return 'expired';
+      if (isExpiring(item)) return 'expiring';
+      return item.status === "received" ? "received" : "waiting";
+    }
+
+    function getStatusText(item) {
+      if (isExpired(item)) return 'หมดอายุแล้ว';
+      if (isExpiring(item)) return 'ใกล้ถึง 3 เดือน';
+      const waitingText = item.source === 'lost' ? 'สูญหาย' : 'รอรับคืน';
+      return item.status === 'received' ? 'ได้คืนแล้ว' : waitingText;
+    }
+
+    // ฟังก์ชันแปลงวันที่และเวลา
+    function formatDate(isoString) {
+      if (!isoString) return '-';
+      try {
+        const date = new Date(isoString);
+        if (isNaN(date.getTime())) return '-';
+        
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      } catch (e) {
+        return '-';
+      }
+    }
+
+    function formatTime(isoString) {
+      if (!isoString) return '-';
+      try {
+        const date = new Date(isoString);
+        if (isNaN(date.getTime())) return '-';
+        
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${hours}:${minutes}`;
+      } catch (e) {
+        return '-';
+      }
+    }
+
+    function renderAdminTable(items) {
+      const tableBody = document.getElementById("adminTableBody");
+      if (!tableBody) return;
+
+      if (!items.length) {
+        tableBody.innerHTML = `<tr><td colspan="13" style="text-align:center;">ยังไม่มีรายการ</td></tr>`;
+        return;
+      }
+
+      tableBody.innerHTML = items.map((item, index) => `
+        <tr>
+          <td data-label="ลำดับ">${index + 1}</td>
+          <td data-label="ประเภทการแจ้ง (Type)">
+            <span style="display:inline-block;padding:4px 8px;border-radius:4px;font-weight:600;background-color:${item.type === 'พบของ' ? '#dcfce7' : '#fef3c7'};color:${item.type === 'พบของ' ? '#166534' : '#92400e'};">
+              ${item.type}
+            </span>
+          </td>
+          <td data-label="หมวดหมู่ / สิ่งของที่หาย (Category)">${item.category}</td>
+          <td data-label="รูปภาพ (Picture)">
+            ${item.itemImage ? `<img src="${item.itemImage}" alt="รูปภาพ" style="width:50px;height:50px;object-fit:cover;">` : "ไม่มี"}
+          </td>
+          <td data-label="ยี่ห้อ / ชื่อในบัตร (Brand)">${item.brand || "-"}</td>
+          <td data-label="รุ่น / เลขบัตร (Model)">${item.details || "-"}</td>
+          <td data-label="รายละเอียดเพิ่มเติม (More Details)">${item.details || "-"}</td>
+          <td data-label="วันที่ (Date)">${formatDate(item.date)}</td>
+          <td data-label="เวลา (Time)">${formatTime(item.time)}</td>
+          <td data-label="สถานที่พบ (Location)">${item.location || "-"}</td>
+          <td data-label="รายละเอียดผู้แจ้ง (Reporter Details)">
+            <div><strong>ชื่อ:</strong> ${item.reporterName || "-"}</div>
+            <div><strong>โทร:</strong> ${item.reporterPhone || "-"}</div>
+            <div><strong>รหัสนักศึกษา:</strong> ${item.reporterStudentId || "-"}</div>
+          </td>
+          <td data-label="การจัดเก็บและครบกำหนด (Record)">
+            <span style="color:#6b7280;">-</span>
+          </td>
+          <td data-label="สถานะ (Status)">
+            <span class="status ${getStatusClass(item)}">${getStatusText(item)}</span>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+      document.getElementById("searchBtn").addEventListener("click", async function () {
+        const itemName = document.getElementById("searchItemName").value.trim().toLowerCase();
+        const location = document.getElementById("searchLocation").value.trim().toLowerCase();
+        const date = document.getElementById("searchDate").value;
+        const details = document.getElementById("searchDetails").value.trim().toLowerCase();
+
+        const all = await loadAllItemsFromSheet();
+        const results = all.filter(item => {
+          const matchBasic = 
+            (!itemName || [item.category, item.brand, item.details].some(v => (v || '').toLowerCase().includes(itemName))) &&
+            (!location || (item.location || '').toLowerCase().includes(location)) &&
+            (!date || item.date === date) &&
+            (!details || (item.details || '').toLowerCase().includes(details));
+
+          return matchBasic;
+        });      const container = document.getElementById("adminTableContainer");
+      const notFound = document.getElementById("notFoundBox");
+      if (results.length > 0) {
+        renderAdminTable(results);
+        container.style.display = "block";
+        if (notFound) notFound.style.display = "none";
+      } else {
+        document.getElementById("adminTableBody").innerHTML = "";
+        container.style.display = "block";
+        if (notFound) notFound.style.display = "block";
+      }
+    });
+
+    (async function init() {
+      const all = await loadAllItemsFromSheet();
+      if (all.length) {
+        renderAdminTable(all);
+        document.getElementById("adminTableContainer").style.display = "block";
+      }
+    })();
   </script>
 </body>
 </html>

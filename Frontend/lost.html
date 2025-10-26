@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แจ้งเรื่องของหาย</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #bc3030;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 25px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        p.intro {
+            text-align: center;
+            color: #555;
+            margin-bottom: 25px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: #ffd13f;
+            color: black;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #da8012;
+        }
+        #status {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        
+        input[type="date"], input[type="time"] {
+          -webkit-appearance: none;
+          appearance: none;
+          height: 44px;
+          padding: 10px 12px;
+          font-size: 16px;
+          line-height: 1.2;
+        }
+        input[type="date"]::-webkit-date-and-time-value,
+        input[type="time"]::-webkit-date-and-time-value {
+          text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="section" id="reportSection">
+            <h1>📝 แบบฟอร์มแจ้งของหาย</h1>
+            <p class="intro">กรุณากรอกข้อมูลให้ครบถ้วนที่สุด<br>เพื่อให้เจ้าหน้าที่ติดตามของให้คุณได้ง่ายขึ้นนะคะ</p>
+
+            <div class="form-group">
+                <label for="itemName">สิ่งของที่คุณทำหายคืออะไร ?</label>
+                <input type="text" id="itemName" name="itemName" placeholder="เช่น กระเป๋าสตางค์, โทรศัพท์, บัตรนักศึกษา" required>
+            </div>
+            <div class="form-group">
+                <label for="brand">ยี่ห้อ / หมายเลขบัตร (ถ้ามี)</label>
+                <input type="text" id="brand" name="brand" placeholder="เช่น Samsung, 1234-5678-xxxx">
+            </div>
+            <div class="form-group">
+                <label for="description">ลักษณะเด่น (สี, รุ่น, ตำหนิ)</label>
+                <textarea id="description" name="description" rows="4" placeholder="เช่น โทรศัพท์สีฟ้า มีรอยขีดด้านหลัง, บัตรมีพวงกุญแจตุ๊กตา" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="location">สถานที่ที่คาดว่าทำหาย</label>
+                <input type="text" id="location" name="location" placeholder="เช่น ห้องเรียน, โรงอาหาร, ลานจอดรถ, ชั้น 3 หอสมุดป๋วย" required>
+            </div>
+
+            <!-- ✅ แยกช่องวันที่และเวลา -->
+            <div class="form-group">
+                <label for="date">วันที่ที่คาดว่าทำหาย</label>
+                <input type="date" id="date" name="date" required>
+            </div>
+            <div class="form-group">
+                <label for="time">เวลาที่คาดว่าทำหาย</label>
+                <input type="time" id="time" name="time" required>
+            </div>
+
+            <!-- ✅ แนบรูปภาพ -->
+            <div class="form-group">
+                <label for="itemImage">แนบรูปภาพ (ถ้ามี)</label>
+                <input type="file" id="itemImage" name="itemImage" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp">
+            </div>
+
+            <!-- ช่องทางติดต่อผู้แจ้ง -->
+            <div class="form-group">
+                <label for="reporterName">ชื่อผู้แจ้ง</label>
+                <input type="text" id="reporterName" placeholder="ชื่อ-สกุล" required>
+            </div>
+            <div class="form-group">
+                <label for="reporterPhone">เบอร์โทรผู้แจ้ง</label>
+                <input 
+                  type="tel" 
+                  id="reporterPhone" 
+                  placeholder="เช่น 0812345678" 
+                  inputmode="numeric"
+                  maxlength="10"
+                  pattern="[0-9]{10}"
+                  oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10);"
+                  required>
+            </div>
+            <div class="form-group">
+                <label for="reporterStudentId">เลขนักศึกษาผู้แจ้ง</label>
+                <input
+                  type="text"
+                  id="reporterStudentId"
+                  placeholder="เช่น 6612345678"
+                  inputmode="numeric"
+                  maxlength="10"
+                  pattern="[0-9]{10}"
+                  oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10);"
+                  required
+                >
+            </div>
+
+            <button id="reportBtn">ส่งข้อมูลแจ้งของหาย</button>
+            <p id="status"></p>
+        </div>
+    </div>
+
+    <script src="liff.js"></script>
+    <script>
+        const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwIFuTgpOLX0ZBdzynd5KkU3ffsWLakRwkskfgbDKEiwHoJK8pqDgki43aEMBW3VUob/exec";
+
+        async function sendToGoogleSheet(data) {
+          try {
+            const response = await fetch(GOOGLE_SHEET_URL, {
+              method: 'POST',
+              mode: 'no-cors',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                type: 'lost', // 👈 เปลี่ยนเป็น 'lost'
+                id: data.id,
+                itemName: data.itemName,
+                brand: data.brand,
+                description: data.description,
+                location: data.location,
+                date: data.date,
+                time: data.time,
+                reporterName: data.reporterName,
+                reporterPhone: data.reporterPhone,
+                reporterStudentId: data.reporterStudentId,
+                status: data.status,
+                itemImage: data.itemImage ? true : false
+              })
+            });
+            console.log('✅ Sent to Google Sheets');
+            return true;
+          } catch (error) {
+            console.error('❌ Failed to send to Google Sheets:', error);
+            return false;
+          }
+        }
+
+        
+        function compressImage(file, maxW = 1024, maxH = 1024, quality = 0.7) {
+          return new Promise((resolve) => {
+            if (!file) return resolve('');
+            const img = new Image();
+            const fr = new FileReader();
+            fr.onload = () => { img.src = fr.result; };
+            fr.onerror = () => resolve('');
+            img.onload = () => {
+              let { width, height } = img;
+              const ratio = Math.min(maxW / width, maxH / height, 1);
+              const w = Math.round(width * ratio);
+              const h = Math.round(height * ratio);
+              const canvas = document.createElement('canvas');
+              canvas.width = w; canvas.height = h;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, w, h);
+              try {
+                const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                resolve(dataUrl || '');
+              } catch {
+                resolve('');
+              }
+            };
+            img.onerror = () => resolve('');
+            fr.readAsDataURL(file);
+          });
+        }
+
+        
+        function readFileAsDataURL(file) {
+          return new Promise((resolve) => {
+            if (!file) return resolve("");
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result || "");
+            reader.onerror = () => resolve("");
+            reader.readAsDataURL(file);
+          });
+        }
+
+        document.getElementById("reportBtn").addEventListener("click", async function () {
+            const itemName = document.getElementById("itemName").value.trim();
+            const brand = document.getElementById("brand").value.trim();
+            const description = document.getElementById("description").value.trim();
+            const location = document.getElementById("location").value.trim();
+            const date = document.getElementById("date").value;
+            const time = document.getElementById("time").value;
+
+            const reporterName = document.getElementById("reporterName").value.trim();
+            const reporterPhone = document.getElementById("reporterPhone").value.trim();
+            const reporterStudentId = document.getElementById("reporterStudentId").value.trim();
+
+            
+            const imageFile = document.getElementById("itemImage").files?.[0] || null;
+            let itemImage = '';
+            try {
+              itemImage = await compressImage(imageFile);
+              if (!itemImage && imageFile) itemImage = await readFileAsDataURL(imageFile);
+              if (itemImage && itemImage.length > 3_500_000) {
+                itemImage = '';
+                console.warn('Image skipped: too large for localStorage');
+              }
+            } catch {
+              itemImage = '';
+            }
+
+            if (!itemName || !description || !location || !date || !time || !reporterName || !reporterPhone || !reporterStudentId) {
+                document.getElementById("status").innerText = "❌ กรุณากรอกข้อมูลให้ครบถ้วน";
+                document.getElementById("status").style.color = "#b91c1c";
+                return;
+            }
+
+            // ตรวจสอบเบอร์และรหัสนักศึกษา 10 หลัก
+            if (reporterPhone.length !== 10 || !/^\d{10}$/.test(reporterPhone)) {
+                document.getElementById("status").innerText = "❌ เบอร์โทรต้องเป็นตัวเลข 10 หลัก";
+                document.getElementById("status").style.color = "#b91c1c";
+                return;
+            }
+            if (reporterStudentId.length !== 10 || !/^\d{10}$/.test(reporterStudentId)) {
+                document.getElementById("status").innerText = "❌ รหัสนักศึกษาต้องเป็นตัวเลข 10 หลัก";
+                document.getElementById("status").style.color = "#b91c1c";
+                return;
+            }
+
+            const lostItems = JSON.parse(localStorage.getItem("lostItems") || "[]");
+            const record = {
+                id: Date.now(),
+                itemName, brand, description, location, date, time,
+                reporterName, reporterPhone, reporterStudentId,
+                itemImage,
+                status: "waiting",
+                created: new Date().toISOString()
+            };
+
+            // Save to local
+            try {
+              lostItems.push(record);
+              localStorage.setItem("lostItems", JSON.stringify(lostItems));
+            } catch (e) {
+              try {
+                record.itemImage = '';
+                lostItems.push(record);
+                localStorage.setItem("lostItems", JSON.stringify(lostItems));
+                document.getElementById("status").innerText = "✅ ส่งข้อมูลแจ้งของหายเรียบร้อยแล้ว (ไม่รวมรูป เนื่องจากพื้นที่ไม่พอ)";
+                document.getElementById("status").style.color = "#166534";
+              } catch (e2) {
+                document.getElementById("status").innerText = "❌ ไม่สามารถบันทึกข้อมูลได้";
+                document.getElementById("status").style.color = "#b91c1c";
+                return;
+              }
+            }
+
+            // Send to Google Sheets
+            sendToGoogleSheet(record).catch(err => {
+              console.warn('Sheet sync failed:', err);
+            });
+
+            document.getElementById("status").innerText = "✅ ส่งข้อมูลแจ้งของหายเรียบร้อยแล้ว";
+            document.getElementById("status").style.color = "#166534";
+
+            // ล้างค่าฟอร์มหลังส่ง
+            document.getElementById("itemName").value = "";
+            document.getElementById("brand").value = "";
+            document.getElementById("description").value = "";
+            document.getElementById("location").value = "";
+            document.getElementById("date").value = "";
+            document.getElementById("time").value = "";
+            document.getElementById("reporterName").value = "";
+            document.getElementById("reporterPhone").value = "";
+            document.getElementById("reporterStudentId").value = "";
+            document.getElementById("itemImage").value = "";
+        });
+    </script>
+</body>
+</html>

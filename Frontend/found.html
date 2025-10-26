@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>แจ้งเรื่องพบของ</title>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -69,6 +68,21 @@
     button:hover {
       background-color: #da8012;
     }
+
+    /* Normalize date/time inputs on iPhone (same height as other inputs) */
+    input[type="date"], input[type="time"] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 44px;
+      padding: 10px 12px;
+      font-size: 16px;
+      line-height: 1.2;
+    }
+    /* Improve rendering of iOS value area */
+    input[type="date"]::-webkit-date-and-time-value,
+    input[type="time"]::-webkit-date-and-time-value {
+      text-align: left;
+    }
   </style>
 </head>
 <body>
@@ -79,19 +93,25 @@
 
     <div class="form-group">
       <label for="category">หมวดหมู่</label>
-      <select id="category" name="category" required>
+      <select id="category" name="category" required onchange="toggleOtherCategory()">
         <option value="">-- เลือกหมวดหมู่ --</option>
         <option>บัตร</option>
         <option>โทรศัพท์</option>
         <option>อุปกรณ์อิเล็กทรอนิกส์</option>
         <option>เครื่องเขียน</option>
-        <option>อื่น ๆ</option>
+        <option value="other">อื่น ๆ</option>
       </select>
+    </div>
+
+
+    <div class="form-group" id="otherCategoryGroup" style="display:none;">
+      <label for="otherCategory">ระบุหมวดหมู่สิ่งของ</label>
+      <input type="text" id="otherCategory" placeholder="เช่น กระเป๋า, เสื้อผ้า">
     </div>
 
     <div class="form-group">
       <label for="brand">ยี่ห้อ / เลขบนบัตร (ถ้ามี)</label>
-      <input type="text" id="brand" name="brand" placeholder="เช่น Student ID 6123456">
+      <input type="text" id="brand" name="brand" placeholder="เช่น Student ID 6612345678">
     </div>
 
     <div class="form-group">
@@ -101,52 +121,279 @@
 
     <div class="form-group">
       <label for="location">สถานที่ที่พบ</label>
-      <input type="text" id="location" name="location" placeholder="เช่น อาคาร U2" required>
+      <input type="text" id="location" name="location" placeholder="เช่น อาคาร บร3" required>
+    </div>
+
+
+    <div class="form-group">
+      <label for="date">วันที่ที่พบ</label>
+      <input type="date" id="date" name="date" required>
     </div>
 
     <div class="form-group">
-      <label for="datetime">วันที่และเวลา</label>
-      <input type="datetime-local" id="datetime" name="datetime" required>
+      <label for="time">เวลาที่พบ</label>
+      <input type="time" id="time" name="time" required>
     </div>
 
-    <button type="button" id="submitBtn">ส่งข้อมูล</button>
+    <div class="form-group">
+      <label for="itemImage">แนบรูปภาพ (ถ้ามี)</label>
+      <input type="file" id="itemImage" name="itemImage" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp">
+    </div>
+
+
+    <div class="form-group">
+      <label for="reporterName">ชื่อผู้แจ้ง</label>
+      <input type="text" id="reporterName" placeholder="ชื่อ-สกุล" required>
+    </div>
+    <div class="form-group">
+      <label for="reporterPhone">เบอร์โทรผู้แจ้ง</label>
+      <input 
+        type="tel" 
+        id="reporterPhone" 
+        placeholder="เช่น 0812345678" 
+        inputmode="numeric"
+        maxlength="10"
+        pattern="[0-9]{10}"
+        oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10);"
+        required>
+    </div>
+    <div class="form-group">
+      <label for="reporterStudentId">เลขนักศึกษาผู้แจ้ง</label>
+      <input
+        type="text"
+        id="reporterStudentId"
+        placeholder="เช่น 6612345678"
+        inputmode="numeric"
+        maxlength="10"
+        pattern="[0-9]{10}"
+        oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10);"
+        required
+      >
+    </div>
+
+    <button type="button" id="submitBtn">ส่งข้อมูลพบของหาย</button>
     <p id="status" style="text-align:center;margin-top:10px;"></p>
   </form>
 
+  <script src="liff.js"></script>
   <script>
-    async function main() {
-      await liff.init({ liffId: "2008305063-P2NpboxX" });
+  // แสดง/ซ่อนช่องกรอกหมวดหมู่เอง
+  function toggleOtherCategory() {
+    const category = document.getElementById('category').value;
+    const otherGroup = document.getElementById('otherCategoryGroup');
+    if (category === 'other') {
+      otherGroup.style.display = 'block';
+      document.getElementById('otherCategory').required = true;
+    } else {
+      otherGroup.style.display = 'none';
+      document.getElementById('otherCategory').required = false;
+      document.getElementById('otherCategory').value = '';
+    }
+  }
 
-      if (!liff.isLoggedIn()) liff.login();
-      const profile = await liff.getProfile();
+  // UI helpers
+  function showStatus(msg, type = 'info') {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.style.color = type === 'error' ? '#b91c1c' : type === 'success' ? '#166534' : '#374151';
+  }
+  function setSubmitting(disabled) {
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = disabled;
+    btn.style.opacity = disabled ? '0.6' : '1';
+    btn.textContent = disabled ? 'กำลังส่ง...' : 'ส่งข้อมูลพบของหาย';
+  }
 
-      document.getElementById("submitBtn").onclick = async () => {
-        const data = {
-          name: profile.displayName,
-          userId: profile.userId,
-          category: document.getElementById("category").value,
-          brand: document.getElementById("brand").value,
-          details: document.getElementById("details").value,
-          location: document.getElementById("location").value,
-          datetime: document.getElementById("datetime").value
-        };
-
-        const res = await fetch("https://script.google.com/macros/s/AKfycbxBrtifRvQ2fbRxEq9gDY_RLkAVcN5tsS2ybYJ34GeyzC6S0BR_UyDHSBhygDzkoYnSSw/exec", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data)
-        });
-
-        if (res.ok) {
-          document.getElementById("status").innerText = "✅ ส่งข้อมูลเรียบร้อยแล้วค่ะ";
-          liff.sendMessages([{ type: "text", text: "ฉันได้แจ้งพบของหายเรียบร้อยแล้วค่ะ" }]);
-        } else {
-          document.getElementById("status").innerText = "❌ มีข้อผิดพลาดในการส่งข้อมูล";
+  // Image: read & compress to JPEG to avoid huge base64 (iOS/quota)
+  function readFileAsDataURL(file) {
+    return new Promise((resolve) => {
+      if (!file) return resolve('');
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result || '');
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+    });
+  }
+  function compressImage(file, maxW = 1024, maxH = 1024, quality = 0.7) {
+    return new Promise((resolve) => {
+      if (!file) return resolve('');
+      const img = new Image();
+      const fr = new FileReader();
+      fr.onload = () => { img.src = fr.result; };
+      fr.onerror = () => resolve('');
+      img.onload = () => {
+        let { width, height } = img;
+        const ratio = Math.min(maxW / width, maxH / height, 1);
+        const w = Math.round(width * ratio);
+        const h = Math.round(height * ratio);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        try {
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(dataUrl || '');
+        } catch {
+          resolve('');
         }
       };
+      img.onerror = () => resolve('');
+      fr.readAsDataURL(file);
+    });
+  }
+
+  let liffProfile = null;
+  async function initLiffSafe() {
+    try { liffProfile = await initializeLiff("2008305063-P2NpboxX"); }
+    catch (e) { console.warn('LIFF init skipped:', e); }
+  }
+
+  const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwIFuTgpOLX0ZBdzynd5KkU3ffsWLakRwkskfgbDKEiwHoJK8pqDgki43aEMBW3VUob/exec";
+
+  async function sendToGoogleSheet(data) {
+    try {
+      const response = await fetch(GOOGLE_SHEET_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'found',
+          id: data.id,
+          category: data.category,
+          brand: data.brand,
+          details: data.details,
+          location: data.location,
+          date: data.date,
+          time: data.time,
+          reporterName: data.reporterName,
+          reporterPhone: data.reporterPhone,
+          reporterStudentId: data.reporterStudentId,
+          status: data.status,
+          itemImage: data.itemImage ? true : false
+        })
+      });
+      console.log('✅ Sent to Google Sheets');
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to send to Google Sheets:', error);
+      return false;
+    }
+  }
+
+  async function handleSubmit() {
+    setSubmitting(true);
+    showStatus('กำลังส่ง...', 'info');
+
+    let category = document.getElementById("category").value;
+    // ถ้าเลือก "อื่น ๆ" ให้ใช้ค่าที่กรอกเอง
+    if (category === 'other') {
+      const otherCat = document.getElementById("otherCategory").value.trim();
+      if (!otherCat) {
+        showStatus('❌ กรุณาระบุหมวดหมู่', 'error');
+        setSubmitting(false);
+        return;
+      }
+      category = otherCat;
     }
 
-    main();
+    const brand = document.getElementById("brand").value;
+    const details = document.getElementById("details").value;
+    const location = document.getElementById("location").value;
+    const date = document.getElementById("date").value;
+    const time = document.getElementById("time").value;
+    const reporterName = document.getElementById("reporterName").value.trim();
+    const reporterPhone = document.getElementById("reporterPhone").value.trim();
+    const reporterStudentId = document.getElementById("reporterStudentId").value.trim();
+
+    // Validate
+    if (!category || !details || !location || !date || !time || !reporterName || !reporterPhone || !reporterStudentId) {
+      showStatus('❌ กรุณากรอกข้อมูลให้ครบถ้วน', 'error');
+      setSubmitting(false);
+      return;
+    }
+
+    // ตรวจสอบเบอร์และรหัสนักศึกษา 10 หลัก
+    if (reporterPhone.length !== 10 || !/^\d{10}$/.test(reporterPhone)) {
+      showStatus('❌ เบอร์โทรต้องเป็นตัวเลข 10 หลัก', 'error');
+      setSubmitting(false);
+      return;
+    }
+    if (reporterStudentId.length !== 10 || !/^\d{10}$/.test(reporterStudentId)) {
+      showStatus('❌ รหัสนักศึกษาต้องเป็นตัวเลข 10 หลัก', 'error');
+      setSubmitting(false);
+      return;
+    }
+
+    // ถ้ารูปใหญ๋เกินไป ให้บันทึกโดยไม่เอารูป
+    const file = document.getElementById("itemImage").files?.[0] || null;
+    let itemImage = '';
+    try {
+      itemImage = await compressImage(file);
+      if (!itemImage && file) itemImage = await readFileAsDataURL(file);
+      if (itemImage && itemImage.length > 3_500_000) {
+        itemImage = '';
+        console.warn('Image skipped: too large for localStorage');
+        showStatus('รูปภาพมีขนาดใหญ่เกินไป จะบันทึกข้อมูลโดยไม่แนบรูปภาพ', 'info');
+      }
+    } catch {
+      itemImage = '';
+    }
+
+    const data = {
+      id: Date.now(),
+      category, brand, details, location, date, time,
+      reporterName, reporterPhone, reporterStudentId,
+      itemImage,
+      status: 'waiting',
+      created: new Date().toISOString()
+    };
+
+    // Save to local
+    const foundItems = JSON.parse(localStorage.getItem("foundItems") || "[]");
+    try {
+      foundItems.push(data);
+      localStorage.setItem("foundItems", JSON.stringify(foundItems));
+    } catch (e) {
+      try {
+        data.itemImage = '';
+        foundItems.push(data);
+        localStorage.setItem("foundItems", JSON.stringify(foundItems));
+        showStatus('บันทึกแล้ว (ไม่รวมรูป เนื่องจากพื้นที่ไม่พอ)', 'info');
+      } catch (e2) {
+        showStatus('❌ ไม่สามารถบันทึกข้อมูลในอุปกรณ์ได้', 'error');
+        setSubmitting(false);
+        return;
+      }
+    }
+
+    // Send to Google Sheets (ไม่รอผลลัพธ์)
+    sendToGoogleSheet(data).catch(err => {
+      console.warn('Sheet sync failed (will retry later):', err);
+    });
+
+    // Success
+    showStatus('✅ ส่งข้อมูลเรียบร้อยแล้ว', 'success');
+    document.getElementById("category").value = "";
+    document.getElementById("otherCategory").value = "";
+    document.getElementById("otherCategoryGroup").style.display = "none";
+    document.getElementById("brand").value = "";
+    document.getElementById("details").value = "";
+    document.getElementById("location").value = "";
+    document.getElementById("date").value = "";
+    document.getElementById("time").value = "";
+    document.getElementById("reporterName").value = "";
+    document.getElementById("reporterPhone").value = "";
+    document.getElementById("reporterStudentId").value = "";
+    document.getElementById("itemImage").value = "";
+    setSubmitting(false);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    initLiffSafe();
+    document.getElementById("submitBtn").addEventListener("click", handleSubmit);
+  });
   </script>
 </body>
 </html>

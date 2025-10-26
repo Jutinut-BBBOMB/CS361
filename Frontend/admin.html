@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบจัดการ - รายการสิ่งของที่เก็บได้</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #bc3030;
+      color: #333;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      overflow-x: auto;
+    }
+
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+      margin-top: 0;
+    }
+
+    .filter-section {
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: space-between;
+    }
+
+    .filter-section select, 
+    .filter-section input, 
+    .filter-section button {
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      flex: 1;
+      min-width: 150px;
+      box-sizing: border-box;
+    }
+
+    .filter-section button {
+      background-color: #ffd13f;
+      color: black;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background-color 0.2s;
+    }
+    .filter-section button:hover { background-color: #da8012; }
+
+    /* สไตล์ตารางสำหรับหน้าจอใหญ่ */
+    .table-wrapper { 
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    table {
+      width: 100%;
+      min-width: 1300px;
+      border-collapse: collapse;
+      margin-top: 20px;
+      table-layout: auto;
+    }
+
+    table th, table td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+      vertical-align: top;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      hyphens: auto;
+    }
+
+    table th {
+      background-color: #f9f9f9;
+      font-weight: bold;
+      line-height: 1.4;
+      white-space: normal;
+    }
+
+    /* คอลัมน์ลำดับไม่ให้ตัดบรรทัด */
+    table th:first-child {
+      white-space: nowrap;
+    }
+
+    .status {
+      font-weight: bold;
+      padding: 5px 10px;
+      border-radius: 4px;
+      display: inline-block;
+      white-space: nowrap;
+    }
+    .status.waiting { background-color: #28a745; color: white; }
+    .status.received { background-color: #007bff; color: white; }
+    .status.expiring { background-color: #ffa500; color: white; }
+    .status.expired { background-color: #dc3545; color: white; }
+
+    button {
+      padding: 5px 10px;
+      background-color: #ffd13f;
+      color: black;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      transition: background-color 0.2s;
+    }
+    button:hover { background-color: #da8012; }
+
+    /* ปรับ input วันที่/เวลาให้แสดงดีบน iPhone */
+    input[type="date"], 
+    input[type="time"] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 44px;
+      padding: 10px 12px;
+      font-size: 16px;
+      line-height: 1.2;
+    }
+    input[type="date"]::-webkit-date-and-time-value,
+    input[type="time"]::-webkit-date-and-time-value {
+      text-align: left;
+    }
+
+    /* สไตล์สำหรับมือถือเท่านั้น */
+    @media (max-width: 768px) {
+      body { padding: 12px; }
+      
+      .container {
+        padding: 16px;
+        overflow-x: visible;
+      }
+
+      h1 { 
+        font-size: 20px; 
+        margin-bottom: 16px;
+      }
+
+      /* ส่วนกรองข้อมูลแสดงแนวตั้งบนมือถือ */
+      .filter-section {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .filter-section select,
+      .filter-section input,
+      .filter-section button {
+        width: 100%;
+        min-width: auto;
+      }
+
+      /* ซ่อนการกำหนดความกว้างคอลัมน์บนมือถือ */
+      colgroup { display: none; }
+
+      .table-wrapper { 
+        overflow: visible;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      table {
+        display: block;
+        width: 100% !important;
+        min-width: auto;
+        max-width: 460px;
+        margin: 0 auto;
+        border-collapse: separate;
+        border-spacing: 0;
+      }
+
+      /* ซ่อนหัวตารางใน mobile */
+      table thead { display: none; }
+
+      table tbody { display: block; width: 100%; }
+
+      /* การ์ดแต่ละแถว */
+      table tbody tr {
+        display: block;
+        width: 100%;
+        margin: 0 auto 14px;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 12px 14px;
+        box-sizing: border-box;
+      }
+
+      /* เซลล์ในการ์ด */
+      table tbody td {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        border: none;
+        border-bottom: 1px solid #eee;
+        padding: 8px 0;
+        text-align: left;
+        white-space: normal;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+      }
+      table tbody td:last-child { border-bottom: none; }
+
+      /* label ด้านซ้าย - ให้ภาษาอังกฤษขึ้นบรรทัดใหม่ */
+      table tbody td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #666;
+        margin-right: 8px;
+        min-width: 130px;
+        max-width: 130px;
+        flex-shrink: 0;
+        white-space: normal;
+        word-break: break-word;
+        line-height: 1.3;
+      }
+
+      /* รูปภาพ */
+      table td[data-label^="รูปภาพ"] img,
+      table td[data-label*="Picture"] img {
+        max-width: 72px;
+        max-height: 72px;
+        object-fit: cover;
+      }
+
+      /* สถานะ */
+      table td[data-label^="สถานะ"] .status,
+      table td[data-label*="Status"] .status {
+        display: inline-block;
+        padding: 6px 10px;
+      }
+
+      /* ปุ่มการจัดการ */
+      table td[data-label^="การจัดเก็บ"] button,
+      table td[data-label*="Record"] button {
+        width: 100%;
+        margin-top: 4px;
+      }
+
+      /* รายละเอียดผู้แจ้ง - ให้แสดงแนวตั้ง */
+      table td[data-label^="รายละเอียดผู้แจ้ง"],
+      table td[data-label*="Reporter Details"] {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      table td[data-label^="รายละเอียดผู้แจ้ง"]::before,
+      table td[data-label*="Reporter Details"]::before {
+        margin-bottom: 8px;
+      }
+
+      table td[data-label^="รายละเอียดผู้แจ้ง"] > div,
+      table td[data-label*="Reporter Details"] > div {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        padding: 4px 0;
+        border-bottom: 1px solid #f0f0f0;
+      }
+
+      table td[data-label^="รายละเอียดผู้แจ้ง"] > div:last-child,
+      table td[data-label*="Reporter Details"] > div:last-child {
+        border-bottom: none;
+      }
+
+      table td[data-label^="รายละเอียดผู้แจ้ง"] strong,
+      table td[data-label*="Reporter Details"] strong {
+        color: #666;
+        font-weight: 600;
+        min-width: 100px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔧 ระบบจัดการ - รายการสิ่งของที่เก็บได้</h1>
+
+    <!-- Filter Section -->
+    <div class="filter-section">
+      <select id="statusFilter">
+        <option value="">-- เลือกสถานะ --</option>
+        <option value="waiting">รอมารับคืน (Waiting for pick up)</option>
+        <option value="received">รับคืนแล้ว (Received)</option>
+        <option value="expiring">ใกล้ถึง 3 เดือน (Expiring)</option>
+        <option value="expired">หมดอายุแล้ว (Expired)</option>
+      </select>
+      <input type="date" id="expiryFilter" placeholder="กรองตามวันที่หมดอายุ">
+      <button onclick="applyFilters()">กรองข้อมูล</button>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <colgroup>
+          <col style="width:80px">
+          <col style="width:120px">
+          <col style="width:140px">
+          <col style="width:100px">
+          <col style="width:140px">
+          <col style="width:140px">
+          <col style="width:180px">
+          <col style="width:120px">
+          <col style="width:100px">
+          <col style="width:140px">
+          <col style="width:180px">
+          <col style="width:160px">
+          <col style="width:120px">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>ลำดับ</th>
+            <th>ประเภทการแจ้ง (Type)</th>
+            <th>หมวดหมู่ / สิ่งของที่หาย (Category)</th>
+            <th>รูปภาพ (Picture)</th>
+            <th>ยี่ห้อ / ชื่อในบัตร (Brand)</th>
+            <th>รุ่น / เลขบัตร (Model)</th>
+            <th>รายละเอียดเพิ่มเติม (More Details)</th>
+            <th>วันที่ (Date)</th>
+            <th>เวลา (Time)</th>
+            <th>สถานที่พบ (Location)</th>
+            <th>รายละเอียดผู้แจ้ง (Reporter Details)</th>
+            <th>การจัดเก็บและครบกำหนด (Record)</th>
+            <th>สถานะ (Status)</th>
+          </tr>
+        </thead>
+        <tbody id="adminTableBody">
+
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="liff.js"></script>
+  <script>
+    const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwIFuTgpOLX0ZBdzynd5KkU3ffsWLakRwkskfgbDKEiwHoJK8pqDgki43aEMBW3VUob/exec";
+
+    async function main() {
+      try {
+        const profile = await initializeLiff("2008305063-P2NpboxX");
+        console.log(`Welcome, ${profile.displayName}`);
+      } catch (e) {
+        console.warn('LIFF init skipped:', e);
+      }
+    }
+    main();
+
+    // โหลดข้อมูลจาก Google Sheets
+    async function loadAllItemsFromSheet() {
+      try {
+        const response = await fetch(GOOGLE_SHEET_URL);
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+          return result.data || [];
+        }
+        return [];
+      } catch (error) {
+        console.error('Failed to load from Sheets:', error);
+        return [];
+      }
+    }
+
+    // ฟังก์ชันช่วยสำหรับสถานะ
+    function getStatusClass(item) {
+      if (isExpired(item)) return 'expired';
+      if (isExpiring(item)) return 'expiring';
+      return item.status === 'received' ? 'received' : 'waiting';
+    }
+
+    function getStatusText(item) {
+      if (isExpired(item)) return 'หมดอายุแล้ว';
+      if (isExpiring(item)) return 'ใกล้ถึง 3 เดือน';
+      const waitingText = item.source === 'lost' ? 'สูญหาย' : 'รอรับคืน';
+      return item.status === 'received' ? 'ได้คืนแล้ว' : waitingText;
+    }
+
+    function isExpiring(item) {
+      if (!item.date) return false;
+      const foundDate = new Date(item.date);
+      const now = new Date();
+      const diffTime = now - foundDate;
+      const diffDays = diffTime / (1000 * 60 * 60 * 24);
+      return diffDays >= 60 && diffDays < 90;
+    }
+
+    function isExpired(item) {
+      if (!item.date) return false;
+      const foundDate = new Date(item.date);
+      const now = new Date();
+      const diffTime = now - foundDate;
+      const diffDays = diffTime / (1000 * 60 * 60 * 24);
+      return diffDays >= 90;
+    }
+
+    // ฟังก์ชันแปลงวันที่และเวลา
+    function formatDate(isoString) {
+      if (!isoString) return '-';
+      try {
+        const date = new Date(isoString);
+        if (isNaN(date.getTime())) return '-';
+        
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      } catch (e) {
+        return '-';
+      }
+    }
+
+    function formatTime(isoString) {
+      if (!isoString) return '-';
+      try {
+        const date = new Date(isoString);
+        if (isNaN(date.getTime())) return '-';
+        
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${hours}:${minutes}`;
+      } catch (e) {
+        return '-';
+      }
+    }
+
+    // แสดงตาราง
+    function renderAdminTable(items) {
+      const tableBody = document.getElementById("adminTableBody");
+      if (!tableBody) return;
+
+      if (!items.length) {
+        tableBody.innerHTML = `<tr><td colspan="13" style="text-align:center;">ยังไม่มีรายการ</td></tr>`;
+        return;
+      }
+
+      tableBody.innerHTML = items.map((item, index) => `
+        <tr>
+          <td data-label="ลำดับ">${index + 1}</td>
+          <td data-label="ประเภทการแจ้ง (Type)">
+            <span style="display:inline-block;padding:4px 8px;border-radius:4px;font-weight:600;background-color:${item.type === 'พบของ' ? '#dcfce7' : '#fef3c7'};color:${item.type === 'พบของ' ? '#166534' : '#92400e'};">
+              ${item.type}
+            </span>
+          </td>
+          <td data-label="หมวดหมู่ (Category)">${item.category}</td>
+          <td data-label="รูปภาพ (Picture)">
+            ${item.itemImage ? `<img src="${item.itemImage}" alt="รูปภาพ" style="width:50px;height:50px;object-fit:cover;">` : "ไม่มี"}
+          </td>
+          <td data-label="ยี่ห้อ / ชื่อในบัตร (Brand)">${item.brand || "-"}</td>
+          <td data-label="รุ่น / เลขบัตร (Model)">${item.details || "-"}</td>
+          <td data-label="รายละเอียดเพิ่มเติม (More Details)">${item.details || "-"}</td>
+          <td data-label="วันที่ (Date)">${formatDate(item.date)}</td>
+          <td data-label="เวลา (Time)">${formatTime(item.time)}</td>
+          <td data-label="สถานที่พบ (Location)">${item.location || "-"}</td>
+          <td data-label="รายละเอียดผู้แจ้ง (Reporter Details)">
+            <div><strong>ชื่อ:</strong> ${item.reporterName || "-"}</div>
+            <div><strong>โทร:</strong> ${item.reporterPhone || "-"}</div>
+            <div><strong>รหัสนักศึกษา:</strong> ${item.reporterStudentId || "-"}</div>
+          </td>
+          <td data-label="การจัดเก็บและครบกำหนด (Record)">${getManagementActions(item)}</td>
+          <td data-label="สถานะ (Status)">
+            <span class="status ${getStatusClass(item)}">${getStatusText(item)}</span>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function getManagementActions(item) {
+      // ของหายไม่มีการจัดเก็บ
+      if (item.source === 'lost') {
+        return `<span style="color:#6b7280;">-</span>`;
+      }
+
+      if (isExpired(item)) {
+        // ของหมดอายุแสดงสถานะการจำหน่าย
+        const currentDisposalStatus = item.disposalStatus || 'pending';
+        
+        if (currentDisposalStatus === 'disposed') {
+          return `<button style="background-color:#7c2d12;color:#fff;" onclick="updateDisposalStatus(${item.id}, '${item.source}', 'pending')">จำหน่ายแล้ว</button>`;
+        } else {
+          return `<button style="background-color:#ea580c;color:#fff;" onclick="updateDisposalStatus(${item.id}, '${item.source}', 'disposed')">รอจำหน่าย</button>`;
+        }
+      } else if (isExpiring(item)) {
+        return `<span class="status expiring">ใกล้ถึง 3 เดือน (Expiring)</span>`;
+      }
+      
+      if (item.status === 'received') {
+        return `<button style="background-color:#dbeafe;color:#1e40af;" onclick="updateStatus(${item.id}, '${item.source}', 'waiting')">รับคืนแล้ว</button>`;
+      } else {
+        return `<button style="background-color:#dcfce7;color:#166534;" onclick="updateStatus(${item.id}, '${item.source}', 'received')">รอรับคืน</button>`;
+      }
+    }
+
+    // อัปเดตสถานะไปยัง Google Sheets
+    async function updateStatus(id, source, newStatus) {
+      try {
+        await fetch(GOOGLE_SHEET_URL + '?action=updateStatus', {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, source, status: newStatus })
+        });
+        
+        // Reload data
+        await applyFilters();
+      } catch (error) {
+        console.error('Failed to update status:', error);
+        alert('ไม่สามารถอัปเดตสถานะได้ กรุณาลองใหม่');
+      }
+    }
+
+    // อัปเดตสถานะการจำหน่ายไปยัง Google Sheets
+    async function updateDisposalStatus(id, source, newDisposalStatus) {
+      try {
+        await fetch(GOOGLE_SHEET_URL + '?action=updateDisposalStatus', {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, source, disposalStatus: newDisposalStatus })
+        });
+        
+        // Reload data
+        await applyFilters();
+      } catch (error) {
+        console.error('Failed to update disposal status:', error);
+        alert('ไม่สามารถอัปเดตสถานะการจำหน่ายได้ กรุณาลองใหม่');
+      }
+    }
+
+    // ฟังก์ชันกรองข้อมูล
+    async function applyFilters() {
+      const statusFilter = document.getElementById("statusFilter")?.value || '';
+      const expiryFilter = document.getElementById("expiryFilter")?.value || '';
+
+      const all = await loadAllItemsFromSheet();
+      const filtered = all.filter(item => {
+        let isStatusMatch = true;
+        if (statusFilter) {
+          const itemStatusClass = getStatusClass(item);
+          isStatusMatch = itemStatusClass === statusFilter;
+        }
+
+        let isExpiryMatch = true;
+        if (expiryFilter) {
+          if (!item.date) {
+            isExpiryMatch = false;
+          } else {
+            const foundDate = new Date(item.date);
+            const filterDate = new Date(expiryFilter);
+            const expiryDate = new Date(foundDate);
+            expiryDate.setDate(expiryDate.getDate() + 90);
+            isExpiryMatch = expiryDate <= filterDate;
+          }
+        }
+
+        return isStatusMatch && isExpiryMatch;
+      });
+
+      renderAdminTable(filtered);
+    }
+
+    // แสดงข้อมูลครั้งแรก
+    document.addEventListener('DOMContentLoaded', applyFilters);
+  </script>
+</body>
+</html>
