@@ -110,7 +110,7 @@
     </div>
 
     <div class="form-group">
-      <label for="brand">ยี่ห้อ / เลขบนบัตร (ถ้ามี)</label>
+      <label for="brand">ยี่ห้อ / หมายเลขบัตร (ถ้ามี)</label>
       <input type="text" id="brand" name="brand" placeholder="เช่น Student ID 6612345678">
     </div>
 
@@ -177,7 +177,10 @@
 
   <script src="liff.js"></script>
   <script>
-  // แสดง/ซ่อนช่องกรอกหมวดหมู่เอง
+    const LAMBDA_FOUND_URL = "https://ug5ylqwjbwgdr3had5jrw5tare0zusry.lambda-url.us-east-1.on.aws/";
+    const LIFF_ID = "2008305063-P2NpboxX";
+
+// แสดง/ซ่อนช่องกรอกหมวดหมู่เอง
   function toggleOtherCategory() {
     const category = document.getElementById('category').value;
     const otherGroup = document.getElementById('otherCategoryGroup');
@@ -198,13 +201,13 @@
     el.style.color = type === 'error' ? '#b91c1c' : type === 'success' ? '#166534' : '#374151';
   }
   function setSubmitting(disabled) {
-    const btn = document.getElementById('submitBtn');
+    const btn = document.getElementById('submitBtn'); // ⭐️ (ใช้ id "submitBtn")
     btn.disabled = disabled;
     btn.style.opacity = disabled ? '0.6' : '1';
     btn.textContent = disabled ? 'กำลังส่ง...' : 'ส่งข้อมูลพบของหาย';
   }
 
-  // Image: read & compress to JPEG to avoid huge base64 (iOS/quota)
+  // Image: read & compress to JPEG
   function readFileAsDataURL(file) {
     return new Promise((resolve) => {
       if (!file) return resolve('');
@@ -242,44 +245,47 @@
     });
   }
 
-  let liffProfile = null;
+let liffProfile = null;
   async function initLiffSafe() {
-    try { liffProfile = await initializeLiff("2008305063-P2NpboxX"); }
+    try {
+      liffProfile = await initializeLiff(LIFF_ID);
+    }
     catch (e) { console.warn('LIFF init skipped:', e); }
   }
 
-  const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwIFuTgpOLX0ZBdzynd5KkU3ffsWLakRwkskfgbDKEiwHoJK8pqDgki43aEMBW3VUob/exec";
-
-  async function sendToGoogleSheet(data) {
-    try {
-      const response = await fetch(GOOGLE_SHEET_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: 'found',
-          id: data.id,
+  // ⭐️ 2. ฟังก์ชันสำหรับส่งข้อมูลไป Lambda (ตัวเดียว)
+async function sendToLambda(data) {
+      // "แมป" ข้อมูลจากฟอร์ม ให้ตรงกับที่ Lambda คาดหวัง
+      const lambdaPayload = {
           category: data.category,
-          brand: data.brand,
+          brandName: data.brand,
+          itemIdNumber: data.details, // (ใช้ details แทน itemIdNumber)
           details: data.details,
-          location: data.location,
-          date: data.date,
-          time: data.time,
+          foundLocation: data.location,
+          foundDate: data.date,
+          foundTime: data.time,
           reporterName: data.reporterName,
-          reporterPhone: data.reporterPhone,
+          reporterContact: data.reporterPhone,
           reporterStudentId: data.reporterStudentId,
-          status: data.status,
-          itemImage: data.itemImage ? true : false
-        })
+          imageBase64: data.itemImage || ""
+      };
+
+      const response = await fetch(LAMBDA_FOUND_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(lambdaPayload)
       });
-      console.log('✅ Sent to Google Sheets');
-      return true;
-    } catch (error) {
-      console.error('❌ Failed to send to Google Sheets:', error);
-      return false;
-    }
+
+      if (!response.ok) {
+          // ถ้า Lambda ตอบ Error (เช่น 400, 500)
+          const errorBody = await response.json().catch(() => ({ error: "Unknown error from Lambda" }));
+          throw new Error(errorBody.error || `HTTP Error ${response.status}`);
+      }
+      
+      // ถ้า Lambda ตอบ 200 OK
+      const result = await response.json();
+      console.log('✅ Sent to Lambda (Found), got response:', result);
+      return result; // ส่งผลลัพธ์ (ที่มี caseId) กลับ
   }
 
   async function handleSubmit() {
@@ -337,25 +343,24 @@
         console.warn('Image skipped: too large for localStorage');
         showStatus('รูปภาพมีขนาดใหญ่เกินไป จะบันทึกข้อมูลโดยไม่แนบรูปภาพ', 'info');
       }
-    } catch {
+  } catch (e) {
+      console.warn("Could not process image", e);
       itemImage = '';
     }
 
     const data = {
-      id: Date.now(),
       category, brand, details, location, date, time,
       reporterName, reporterPhone, reporterStudentId,
       itemImage,
-      status: 'waiting',
-      created: new Date().toISOString()
     };
 
+
     // Save to local
-    const foundItems = JSON.parse(localStorage.getItem("foundItems") || "[]");
-    try {
-      foundItems.push(data);
-      localStorage.setItem("foundItems", JSON.stringify(foundItems));
-    } catch (e) {
+  const foundItems = JSON.parse(localStorage.getItem("foundItems") || "[]");
+    try {
+      foundItems.push(data);
+      localStorage.setItem("foundItems", JSON.stringify(foundItems));
+    } catch (e) {
       try {
         data.itemImage = '';
         foundItems.push(data);
@@ -368,31 +373,39 @@
       }
     }
 
-    // Send to Google Sheets (ไม่รอผลลัพธ์)
-    sendToGoogleSheet(data).catch(err => {
-      console.warn('Sheet sync failed (will retry later):', err);
-    });
+    // ⭐️ 3. ส่งข้อมูลไป AWS ที่เดียว
+try {
+      showStatus('กำลังเชื่อมต่อฐานข้อมูล AWS...', 'info');
+      const lambdaResult = await sendToLambda(data);
 
-    // Success
-    showStatus('✅ ส่งข้อมูลเรียบร้อยแล้ว', 'success');
-    document.getElementById("category").value = "";
-    document.getElementById("otherCategory").value = "";
-    document.getElementById("otherCategoryGroup").style.display = "none";
-    document.getElementById("brand").value = "";
-    document.getElementById("details").value = "";
-    document.getElementById("location").value = "";
-    document.getElementById("date").value = "";
-    document.getElementById("time").value = "";
-    document.getElementById("reporterName").value = "";
-    document.getElementById("reporterPhone").value = "";
-    document.getElementById("reporterStudentId").value = "";
-    document.getElementById("itemImage").value = "";
-    setSubmitting(false);
+      showStatus(`✅ ส่งข้อมูลเรียบร้อย! (Case ID: ${lambdaResult.caseId || 'N/A'})`, 'success');
+
+      // ล้างฟอร์ม
+      document.getElementById("category").value = "";
+      document.getElementById("otherCategory").value = "";
+      document.getElementById("otherCategoryGroup").style.display = "none";
+      document.getElementById("brand").value = "";
+      document.getElementById("details").value = "";
+      document.getElementById("location").value = "";
+      document.getElementById("date").value = "";
+      document.getElementById("time").value = "";
+      document.getElementById("reporterName").value = "";
+      document.getElementById("reporterPhone").value = "";
+      document.getElementById("reporterStudentId").value = "";
+      document.getElementById("itemImage").value = "";
+
+    } catch (error) {
+      console.error('Submit failed:', error);
+      showStatus(`❌ ส่งข้อมูลไม่สำเร็จ: ${error.message}`, 'error');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
     initLiffSafe();
     document.getElementById("submitBtn").addEventListener("click", handleSubmit);
+    document.getElementById("category").addEventListener("change", toggleOtherCategory);
   });
   </script>
 </body>
