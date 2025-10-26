@@ -156,174 +156,206 @@
         </div>
     </div>
 
-    <script src="liff.js"></script>
-    <script>
-        const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwIFuTgpOLX0ZBdzynd5KkU3ffsWLakRwkskfgbDKEiwHoJK8pqDgki43aEMBW3VUob/exec";
+<script src="liff.js"></script>
+<script>
+  // ⭐️ 1. URL ของ Lambda "แจ้งของหาย" (Lost)
+  const LAMBDA_LOST_URL = "https://7ipwb7gq4jr23b5to624urel3q0pxdcz.lambda-url.us-east-1.on.aws/";
+  const LIFF_ID = "2008305063-P2NpboxX";
 
-        async function sendToGoogleSheet(data) {
-          try {
-            const response = await fetch(GOOGLE_SHEET_URL, {
-              method: 'POST',
-              mode: 'no-cors',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                type: 'lost', // 👈 เปลี่ยนเป็น 'lost'
-                id: data.id,
-                itemName: data.itemName,
-                brand: data.brand,
-                description: data.description,
-                location: data.location,
-                date: data.date,
-                time: data.time,
-                reporterName: data.reporterName,
-                reporterPhone: data.reporterPhone,
-                reporterStudentId: data.reporterStudentId,
-                status: data.status,
-                itemImage: data.itemImage ? true : false
-              })
-            });
-            console.log('✅ Sent to Google Sheets');
-            return true;
-          } catch (error) {
-            console.error('❌ Failed to send to Google Sheets:', error);
-            return false;
-          }
+  // ----------------------------------------------------
+  //               UI & IMAGE HELPERS
+  // ----------------------------------------------------
+  
+  function showStatus(msg, type = 'info') {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.style.color = type === 'error' ? '#b91c1c' : type === 'success' ? '#166534' : '#374151';
+  }
+  function setSubmitting(disabled) {
+    const btn = document.getElementById('reportBtn');
+    btn.disabled = disabled;
+    btn.style.opacity = disabled ? '0.6' : '1';
+    btn.textContent = disabled ? 'กำลังส่ง...' : 'ส่งข้อมูลแจ้งของหาย';
+  }
+
+  function readFileAsDataURL(file) {
+    return new Promise((resolve) => {
+      if (!file) return resolve('');
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result || '');
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+    });
+  }
+  function compressImage(file, maxW = 1024, maxH = 1024, quality = 0.7) {
+    return new Promise((resolve) => {
+      if (!file) return resolve('');
+      const img = new Image();
+      const fr = new FileReader();
+      fr.onload = () => { img.src = fr.result; };
+      fr.onerror = () => resolve('');
+      img.onload = () => {
+        let { width, height } = img;
+        const ratio = Math.min(maxW / width, maxH / height, 1);
+        const w = Math.round(width * ratio);
+        const h = Math.round(height * ratio);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        try {
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(dataUrl || '');
+        } catch {
+          resolve('');
         }
+      };
+      img.onerror = () => resolve('');
+      fr.readAsDataURL(file);
+    });
+  }
 
-        
-        function compressImage(file, maxW = 1024, maxH = 1024, quality = 0.7) {
-          return new Promise((resolve) => {
-            if (!file) return resolve('');
-            const img = new Image();
-            const fr = new FileReader();
-            fr.onload = () => { img.src = fr.result; };
-            fr.onerror = () => resolve('');
-            img.onload = () => {
-              let { width, height } = img;
-              const ratio = Math.min(maxW / width, maxH / height, 1);
-              const w = Math.round(width * ratio);
-              const h = Math.round(height * ratio);
-              const canvas = document.createElement('canvas');
-              canvas.width = w; canvas.height = h;
-              const ctx = canvas.getContext('2d');
-              ctx.drawImage(img, 0, 0, w, h);
-              try {
-                const dataUrl = canvas.toDataURL('image/jpeg', quality);
-                resolve(dataUrl || '');
-              } catch {
-                resolve('');
-              }
-            };
-            img.onerror = () => resolve('');
-            fr.readAsDataURL(file);
-          });
-        }
+  // ----------------------------------------------------
+  //               LIFF & AWS FUNCTIONS
+  // ----------------------------------------------------
 
-        
-        function readFileAsDataURL(file) {
-          return new Promise((resolve) => {
-            if (!file) return resolve("");
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result || "");
-            reader.onerror = () => resolve("");
-            reader.readAsDataURL(file);
-          });
-        }
+  let liffProfile = null;
+  async function initLiffSafe() {
+    try { 
+      // (สันนิษฐานว่า liff.js มีฟังก์ชัน initializeLiff)
+      // liffProfile = await initializeLiff(LIFF_ID); 
+    }
+    catch (e) { console.warn('LIFF init skipped:', e); }
+  }
 
-        document.getElementById("reportBtn").addEventListener("click", async function () {
-            const itemName = document.getElementById("itemName").value.trim();
-            const brand = document.getElementById("brand").value.trim();
-            const description = document.getElementById("description").value.trim();
-            const location = document.getElementById("location").value.trim();
-            const date = document.getElementById("date").value;
-            const time = document.getElementById("time").value;
+  // ⭐️ 2. ฟังก์ชันสำหรับส่งข้อมูลไป Lambda (ตัวเดียว)
+  // (ลบ sendToGoogleSheet ทิ้ง)
+  async function sendToLambda(data) {
+      // "แมป" (map) ข้อมูลจากฟอร์ม ให้ตรงกับที่ Lambda คาดหวัง
+      const lambdaPayload = {
+          itemDescription: data.itemName,// (ฟอร์มใช้ itemName)
+          brandOrId: data.brand,
+          distinguishingFeatures: data.description,
+          lostLocation: data.location,
+          lostDate: data.date,
+          lostTime: data.time,
+          imageBase64: data.itemImage || "",
+          reporterName: data.reporterName,
+          reporterContact: data.reporterPhone,
+          reporterStudentId: data.reporterStudentId
+      };
 
-            const reporterName = document.getElementById("reporterName").value.trim();
-            const reporterPhone = document.getElementById("reporterPhone").value.trim();
-            const reporterStudentId = document.getElementById("reporterStudentId").value.trim();
+      const response = await fetch(LAMBDA_LOST_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(lambdaPayload)
+      });
 
-            
-            const imageFile = document.getElementById("itemImage").files?.[0] || null;
-            let itemImage = '';
-            try {
-              itemImage = await compressImage(imageFile);
-              if (!itemImage && imageFile) itemImage = await readFileAsDataURL(imageFile);
-              if (itemImage && itemImage.length > 3_500_000) {
-                itemImage = '';
-                console.warn('Image skipped: too large for localStorage');
-              }
-            } catch {
-              itemImage = '';
-            }
+      if (!response.ok) {
+          const errorBody = await response.json().catch(() => ({ error: "Unknown error from Lambda" }));
+          throw new Error(errorBody.error || `HTTP Error ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('✅ Sent to Lambda (Lost), got response:', result);
+      return result; 
+  }
 
-            if (!itemName || !description || !location || !date || !time || !reporterName || !reporterPhone || !reporterStudentId) {
-                document.getElementById("status").innerText = "❌ กรุณากรอกข้อมูลให้ครบถ้วน";
-                document.getElementById("status").style.color = "#b91c1c";
-                return;
-            }
+  // ----------------------------------------------------
+  //               MAIN SUBMIT LOGIC
+  // ----------------------------------------------------
 
-            // ตรวจสอบเบอร์และรหัสนักศึกษา 10 หลัก
-            if (reporterPhone.length !== 10 || !/^\d{10}$/.test(reporterPhone)) {
-                document.getElementById("status").innerText = "❌ เบอร์โทรต้องเป็นตัวเลข 10 หลัก";
-                document.getElementById("status").style.color = "#b91c1c";
-                return;
-            }
-            if (reporterStudentId.length !== 10 || !/^\d{10}$/.test(reporterStudentId)) {
-                document.getElementById("status").innerText = "❌ รหัสนักศึกษาต้องเป็นตัวเลข 10 หลัก";
-                document.getElementById("status").style.color = "#b91c1c";
-                return;
-            }
+  // ⭐️ 3. แก้ไข handleSubmit (ตัวหลัก)
+  document.getElementById("reportBtn").addEventListener("click", async function () {
+    setSubmitting(true);
+    showStatus('กำลังส่ง...', 'info');
 
-            const lostItems = JSON.parse(localStorage.getItem("lostItems") || "[]");
-            const record = {
-                id: Date.now(),
-                itemName, brand, description, location, date, time,
-                reporterName, reporterPhone, reporterStudentId,
-                itemImage,
-                status: "waiting",
-                created: new Date().toISOString()
-            };
+    const itemName = document.getElementById("itemName").value.trim();
+    const brand = document.getElementById("brand").value.trim();
+    const description = document.getElementById("description").value.trim();
+    const location = document.getElementById("location").value.trim();
+    const date = document.getElementById("date").value;
+    const time = document.getElementById("time").value;
+    const reporterName = document.getElementById("reporterName").value.trim();
+    const reporterPhone = document.getElementById("reporterPhone").value.trim();
+    const reporterStudentId = document.getElementById("reporterStudentId").value.trim();
 
-            // Save to local
-            try {
-              lostItems.push(record);
-              localStorage.setItem("lostItems", JSON.stringify(lostItems));
-            } catch (e) {
-              try {
-                record.itemImage = '';
-                lostItems.push(record);
-                localStorage.setItem("lostItems", JSON.stringify(lostItems));
-                document.getElementById("status").innerText = "✅ ส่งข้อมูลแจ้งของหายเรียบร้อยแล้ว (ไม่รวมรูป เนื่องจากพื้นที่ไม่พอ)";
-                document.getElementById("status").style.color = "#166534";
-              } catch (e2) {
-                document.getElementById("status").innerText = "❌ ไม่สามารถบันทึกข้อมูลได้";
-                document.getElementById("status").style.color = "#b91c1c";
-                return;
-              }
-            }
+    // Validate (เหมือนเดิม)
+    if (!itemName || !description || !location || !date || !time || !reporterName || !reporterPhone || !reporterStudentId) {
+      showStatus('❌ กรุณากรอกข้อมูลให้ครบถ้วน', 'error');
+      setSubmitting(false);
+      return;
+    }
+    if (reporterPhone.length !== 10 || !/^\d{10}$/.test(reporterPhone)) {
+      showStatus('❌ เบอร์โทรต้องเป็นตัวเลข 10 หลัก', 'error');
+      setSubmitting(false);
+      return;
+    }
+    if (reporterStudentId.length !== 10 || !/^\d{10}$/.test(reporterStudentId)) {
+      showStatus('❌ รหัสนักศึกษาต้องเป็นตัวเลข 10 หลัก', 'error');
+      setSubmitting(false);
+      return;
+    }
 
-            // Send to Google Sheets
-            sendToGoogleSheet(record).catch(err => {
-              console.warn('Sheet sync failed:', err);
-            });
+    // Process Image (เหมือนเดิม)
+    const file = document.getElementById("itemImage").files?.[0] || null;
+    let itemImage = '';
+    try {
+      itemImage = await compressImage(file);
+      if (!itemImage && file) itemImage = await readFileAsDataURL(file);
+      if (itemImage && itemImage.length > 3_500_000) {
+        itemImage = '';
+        showStatus('รูปภาพใหญ่เกินไป จะส่งข้อมูลโดยไม่แนบรูป', 'info');
+      }
+    } catch (e) {
+      console.warn("Could not process image", e);
+      itemImage = '';
+    }
 
-            document.getElementById("status").innerText = "✅ ส่งข้อมูลแจ้งของหายเรียบร้อยแล้ว";
-            document.getElementById("status").style.color = "#166534";
+    const data = {
+      itemName, brand, description, location, date, time,
+      reporterName, reporterPhone, reporterStudentId,
+      itemImage,
+    };
 
-            // ล้างค่าฟอร์มหลังส่ง
-            document.getElementById("itemName").value = "";
-            document.getElementById("brand").value = "";
-            document.getElementById("description").value = "";
-            document.getElementById("location").value = "";
-            document.getElementById("date").value = "";
-            document.getElementById("time").value = "";
-            document.getElementById("reporterName").value = "";
-            document.getElementById("reporterPhone").value = "";
-            document.getElementById("reporterStudentId").value = "";
-            document.getElementById("itemImage").value = "";
-        });
-    </script>
+    // ⭐️ 4. ลบ localStorage และ Google Sheets ออก
+    // (เราลบโค้ด `localStorage.setItem` และ `sendToGoogleSheet` ออกแล้ว)
+
+    // ⭐️ 5. ส่งข้อมูลไป AWS ที่เดียว
+    try {
+      showStatus('กำลังเชื่อมต่อฐานข้อมูล AWS...', 'info');
+      const lambdaResult = await sendToLambda(data);
+
+      showStatus(`✅ ส่งข้อมูลแจ้งของหายเรียบร้อย! (Case ID: ${lambdaResult.caseId || 'N/A'})`, 'success');
+      
+      // ล้างฟอร์ม
+      document.getElementById("itemName").value = "";
+      document.getElementById("brand").value = "";
+      document.getElementById("description").value = "";
+      document.getElementById("location").value = "";
+      document.getElementById("date").value = "";
+      document.getElementById("time").value = "";
+      document.getElementById("reporterName").value = "";
+      document.getElementById("reporterPhone").value = "";
+      document.getElementById("reporterStudentId").value = "";
+      document.getElementById("itemImage").value = "";
+      
+    } catch (error) {
+      console.error('Submit failed:', error);
+      showStatus(`❌ ส่งข้อมูลไม่สำเร็จ: ${error.message}`, 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  });
+
+  // ----------------------------------------------------
+  //               INITIALIZE
+  // ----------------------------------------------------
+  
+  document.addEventListener('DOMContentLoaded', () => {
+    initLiffSafe();
+    // (Event Listener ถูกย้ายไปอยู่ข้างบนแล้ว)
+  });
+</script>
 </body>
 </html>
