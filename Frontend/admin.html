@@ -345,233 +345,217 @@
 
   <script src="liff.js"></script>
   <script>
-    const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwIFuTgpOLX0ZBdzynd5KkU3ffsWLakRwkskfgbDKEiwHoJK8pqDgki43aEMBW3VUob/exec";
+      const LAMBDA_SEARCH_URL = "https://vnzvfki24e5re2d6fh3k6bmq2a0ddolc.lambda-url.us-east-1.on.aws/";
+      const LAMBDA_LOST_URL = "https://7ipwb7gq4jr23b5to624urel3q0pxdcz.lambda-url.us-east-1.on.aws/";
+      const LIFF_ID = "2008305063-P2NpboxX";
 
-    async function main() {
-      try {
-        const profile = await initializeLiff("2008305063-P2NpboxX");
-        console.log(`Welcome, ${profile.displayName}`);
-      } catch (e) {
-        console.warn('LIFF init skipped:', e);
-      }
-    }
-    main();
-
-    // โหลดข้อมูลจาก Google Sheets
-    async function loadAllItemsFromSheet() {
-      try {
-        const response = await fetch(GOOGLE_SHEET_URL);
-        const result = await response.json();
-        
-        if (result.status === 'success') {
-          return result.data || [];
-        }
-        return [];
-      } catch (error) {
-        console.error('Failed to load from Sheets:', error);
-        return [];
-      }
-    }
-
-    // ฟังก์ชันช่วยสำหรับสถานะ
-    function getStatusClass(item) {
-      if (isExpired(item)) return 'expired';
-      if (isExpiring(item)) return 'expiring';
-      return item.status === 'received' ? 'received' : 'waiting';
-    }
-
-    function getStatusText(item) {
-      if (isExpired(item)) return 'หมดอายุแล้ว';
-      if (isExpiring(item)) return 'ใกล้ถึง 3 เดือน';
-      const waitingText = item.source === 'lost' ? 'สูญหาย' : 'รอรับคืน';
-      return item.status === 'received' ? 'ได้คืนแล้ว' : waitingText;
-    }
-
-    function isExpiring(item) {
-      if (!item.date) return false;
-      const foundDate = new Date(item.date);
-      const now = new Date();
-      const diffTime = now - foundDate;
-      const diffDays = diffTime / (1000 * 60 * 60 * 24);
-      return diffDays >= 60 && diffDays < 90;
-    }
-
-    function isExpired(item) {
-      if (!item.date) return false;
-      const foundDate = new Date(item.date);
-      const now = new Date();
-      const diffTime = now - foundDate;
-      const diffDays = diffTime / (1000 * 60 * 60 * 24);
-      return diffDays >= 90;
-    }
-
-    // ฟังก์ชันแปลงวันที่และเวลา
+    // (ฟังก์ชัน formatDate, formatTime... ถ้าต้องการใช้)
     function formatDate(isoString) {
+      // ... (โค้ด formatDate)
       if (!isoString) return '-';
       try {
         const date = new Date(isoString);
-        if (isNaN(date.getTime())) return '-';
-        
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-      } catch (e) {
-        return '-';
-      }
+        return isNaN(date.getTime()) ? '-' : date.toISOString().split('T')[0];
+      } catch (e) { return '-'; }
     }
-
     function formatTime(isoString) {
-      if (!isoString) return '-';
-      try {
-        const date = new Date(isoString);
-        if (isNaN(date.getTime())) return '-';
-        
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        return `${hours}:${minutes}`;
-      } catch (e) {
-        return '-';
-      }
+      // ... (โค้ด formatTime)
+       if (!isoString) return '-';
+       try {
+         const date = new Date(isoString);
+         return isNaN(date.getTime()) ? '-' : date.toTimeString().split(' ')[0].substring(0, 5);
+       } catch (e) { return '-'; }
     }
 
-    // แสดงตาราง
+    /**
+     * ⭐️ 2. ฟังก์ชัน render ตารางสำหรับ Admin (แสดงผล 2 แบบ)
+     */
     function renderAdminTable(items) {
-      const tableBody = document.getElementById("adminTableBody");
-      if (!tableBody) return;
+      const tbody = document.getElementById("adminTableBody");
+      if (!tbody) return;
+      
+      items.sort((a, b) => (b.reportTimestamp || '').localeCompare(a.reportTimestamp || ''));
 
-      if (!items.length) {
-        tableBody.innerHTML = `<tr><td colspan="13" style="text-align:center;">ยังไม่มีรายการ</td></tr>`;
-        return;
+      if (items.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;">ไม่พบข้อมูล</td></tr>`;
+          return;
       }
 
-      tableBody.innerHTML = items.map((item, index) => `
+      tbody.innerHTML = items.map((item, index) => {
+        
+        // --- แสดงผลสำหรับ 'LOST_REPORT' ---
+        if (item.item_type === 'LOST_REPORT') {
+            const status = item.status || 'lost_reported';
+            return `
+            <tr>
+              <td data-label="ลำดับ">${index + 1}</td>
+              <td data-label="ประเภทการแจ้ง (Type)">
+                <span style="display:inline-block;padding:4px 8px;border-radius:4px;font-weight:600;background-color:#fef3c7;color:#92400e;">
+                  แจ้งของหาย
+                </span>
+              </td>
+              <td data-label="หมวดหมู่ / สิ่งของที่หาย (Category)">${item.itemDescription || "-"}</td>
+              <td data-label="รูปภาพ (Picture)">
+                ${item.imageUrl ? `<a href="${item.imageUrl}" target="_blank"><img src="${item.imageUrl}" alt="item" style="width:50px;height:50px;object-fit:cover;"></a>` : 'ไม่มี'}
+              </td>
+              <td data-label="ยี่ห้อ / ชื่อในบัตร (Brand)">${item.brandOrId || "-"}</td>
+              <td data-label="รุ่น / เลขบัตร (Model)">-</td>
+              <td data-label="รายละเอียดเพิ่มเติม (More Details)">${item.distinguishingFeatures || "-"}</td>
+              <td data-label="วันที่ (Date)">${item.lostDate || "-"}</td>
+              <td data-label="เวลา (Time)">${item.lostTime || "-"}</td>
+              <td data-label="สถานที่พบ (Location)">${item.lostLocation || "-"}</td>
+              <td data-label="รายละเอียดผู้แจ้ง (Reporter Details)">
+                <div><strong>ชื่อ:</strong> ${item.reporterName || "-"}</div>
+                <div><strong>โทร:</strong> ${item.reporterContact || "-"}</div>
+                <div><strong>รหัสนักศึกษา:</strong> ${item.reporterStudentId || "-"}</div>
+              </td>
+              <td data-label="การจัดเก็บและครบกำหนด (Record)">
+                <span style="color:#6b7280;font-weight:bold;">${item.case_id || 'N/A'}</span>
+              </td>
+              <td data-label="สถานะ (Status)">
+                <span class="status waiting">${status === 'lost_reported' ? 'กำลังตามหา' : status}</span>
+                </td>
+            </tr>
+          `;
+        } 
+        
+        // --- (Default) แสดงผล 'FOUND_ITEM' ---
+        const statusClassMap = { 'reported': 'waiting', 'claimed': 'received', 'expired': 'expired' };
+        const statusTextMap = { 'reported': 'รอรับคืน', 'claimed': 'รับคืนแล้ว', 'expired': 'หมดอายุ' };
+        const status = item.status || 'reported';
+        return `
         <tr>
           <td data-label="ลำดับ">${index + 1}</td>
           <td data-label="ประเภทการแจ้ง (Type)">
-            <span style="display:inline-block;padding:4px 8px;border-radius:4px;font-weight:600;background-color:${item.type === 'พบของ' ? '#dcfce7' : '#fef3c7'};color:${item.type === 'พบของ' ? '#166534' : '#92400e'};">
-              ${item.type}
+            <span style="display:inline-block;padding:4px 8px;border-radius:4px;font-weight:600;background-color:#dcfce7;color:#166534;">
+              พบของ
             </span>
           </td>
-          <td data-label="หมวดหมู่ (Category)">${item.category}</td>
+          <td data-label="หมวดหมู่ / สิ่งของที่หาย (Category)">${item.category || "-"}</td>
           <td data-label="รูปภาพ (Picture)">
-            ${item.itemImage ? `<img src="${item.itemImage}" alt="รูปภาพ" style="width:50px;height:50px;object-fit:cover;">` : "ไม่มี"}
+            ${item.imageUrl ? `<a href="${item.imageUrl}" target="_blank"><img src="${item.imageUrl}" alt="item" style="width:50px;height:50px;object-fit:cover;"></a>` : 'ไม่มี'}
           </td>
-          <td data-label="ยี่ห้อ / ชื่อในบัตร (Brand)">${item.brand || "-"}</td>
-          <td data-label="รุ่น / เลขบัตร (Model)">${item.details || "-"}</td>
+          <td data-label="ยี่ห้อ / ชื่อในบัตร (Brand)">${item.brandName || "-"}</td>
+          <td data-label="รุ่น / เลขบัตร (Model)">${item.itemIdNumber || "-"}</td>
           <td data-label="รายละเอียดเพิ่มเติม (More Details)">${item.details || "-"}</td>
-          <td data-label="วันที่ (Date)">${formatDate(item.date)}</td>
-          <td data-label="เวลา (Time)">${formatTime(item.time)}</td>
-          <td data-label="สถานที่พบ (Location)">${item.location || "-"}</td>
+          <td data-label="วันที่ (Date)">${item.foundDate || "-"}</td>
+          <td data-label="เวลา (Time)">${item.foundTime || "-"}</td>
+          <td data-label="สถานที่พบ (Location)">${item.foundLocation || "-"}</td>
           <td data-label="รายละเอียดผู้แจ้ง (Reporter Details)">
             <div><strong>ชื่อ:</strong> ${item.reporterName || "-"}</div>
-            <div><strong>โทร:</strong> ${item.reporterPhone || "-"}</div>
+            <div><strong>โทร:</strong> ${item.reporterContact || "-"}</div>
             <div><strong>รหัสนักศึกษา:</strong> ${item.reporterStudentId || "-"}</div>
           </td>
-          <td data-label="การจัดเก็บและครบกำหนด (Record)">${getManagementActions(item)}</td>
-          <td data-label="สถานะ (Status)">
-            <span class="status ${getStatusClass(item)}">${getStatusText(item)}</span>
+          <td data-label="การจัดเก็บและครบกำหนด (Record)">
+            <span style="color:#6b7280;font-weight:bold;">${item.case_id || 'N/A'}</span>
           </td>
+          <td data-label="สถานะ (Status)">
+            <span class="status ${statusClassMap[status] || 'waiting'}">${statusTextMap[status] || 'รอรับคืน'}</span>
+            </td>
         </tr>
-      `).join("");
+      `;
+      }).join("");
     }
 
-    function getManagementActions(item) {
-      // ของหายไม่มีการจัดเก็บ
-      if (item.source === 'lost') {
-        return `<span style="color:#6b7280;">-</span>`;
-      }
-
-      if (isExpired(item)) {
-        // ของหมดอายุแสดงสถานะการจำหน่าย
-        const currentDisposalStatus = item.disposalStatus || 'pending';
-        
-        if (currentDisposalStatus === 'disposed') {
-          return `<button style="background-color:#7c2d12;color:#fff;" onclick="updateDisposalStatus(${item.id}, '${item.source}', 'pending')">จำหน่ายแล้ว</button>`;
-        } else {
-          return `<button style="background-color:#ea580c;color:#fff;" onclick="updateDisposalStatus(${item.id}, '${item.source}', 'disposed')">รอจำหน่าย</button>`;
-        }
-      } else if (isExpiring(item)) {
-        return `<span class="status expiring">ใกล้ถึง 3 เดือน (Expiring)</span>`;
-      }
+    /**
+     * ⭐️ 3. ฟังก์ชันสำหรับเรียก Lambda (ตัวเดียว)
+     */
+    async function fetchFromLambda(payload) {
+      const tbody = document.getElementById("adminTableBody");
+      tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;">กำลังค้นหา...</td></tr>`;
       
-      if (item.status === 'received') {
-        return `<button style="background-color:#dbeafe;color:#1e40af;" onclick="updateStatus(${item.id}, '${item.source}', 'waiting')">รับคืนแล้ว</button>`;
-      } else {
-        return `<button style="background-color:#dcfce7;color:#166534;" onclick="updateStatus(${item.id}, '${item.source}', 'received')">รอรับคืน</button>`;
-      }
-    }
-
-    // อัปเดตสถานะไปยัง Google Sheets
-    async function updateStatus(id, source, newStatus) {
       try {
-        await fetch(GOOGLE_SHEET_URL + '?action=updateStatus', {
+        const response = await fetch(LAMBDA_SEARCH_URL, {
           method: 'POST',
-          mode: 'no-cors',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, source, status: newStatus })
+          body: JSON.stringify(payload)
         });
-        
-        // Reload data
-        await applyFilters();
+
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const result = await response.json();
+
+        if (result.status === 'success' && result.count > 0) {
+          renderAdminTable(result.items);
+        } else {
+          tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;">ไม่พบข้อมูล</td></tr>`;
+        }
       } catch (error) {
-        console.error('Failed to update status:', error);
-        alert('ไม่สามารถอัปเดตสถานะได้ กรุณาลองใหม่');
+        console.error('Error fetching search results:', error);
+        tbody.innerHTML = `<tr><td colspan="13" style="color:red; text-align:center;">เกิดข้อผิดพลาด: ${error.message}</td></tr>`;
       }
     }
+    
 
-    // อัปเดตสถานะการจำหน่ายไปยัง Google Sheets
-    async function updateDisposalStatus(id, source, newDisposalStatus) {
-      try {
-        await fetch(GOOGLE_SHEET_URL + '?action=updateDisposalStatus', {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, source, disposalStatus: newDisposalStatus })
-        });
-        
-        // Reload data
-        await applyFilters();
-      } catch (error) {
-        console.error('Failed to update disposal status:', error);
-        alert('ไม่สามารถอัปเดตสถานะการจำหน่ายได้ กรุณาลองใหม่');
-      }
-    }
+// อัปเดตสถานะสิ่งของ
+async function updateItemStatus(itemId, newStatus) {
+  try {
+    console.log(`Updating item ${itemId} to ${newStatus}`);
+     // TODO: เมื่อมี Lambda สำหรับอัปเดตจริง ให้ปลดคอมเมนต์แล้วใส่ URL
+     const LAMBDA_UPDATE_URL = "https://<your-update-lambda>/";
+     await fetch(LAMBDA_UPDATE_URL, {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ item_id: itemId, new_status: newStatus })
+     });
+  } catch (e) {
+    console.error(e);
+    alert('อัปเดตสถานะไม่สำเร็จ');
+  } finally {
+    // โหลดข้อมูลใหม่เสมอ
+    fetchFromLambda({ search_mode: "admin" });
+  }
+}
 
-    // ฟังก์ชันกรองข้อมูล
-    async function applyFilters() {
+// อัปเดตสถานะการจัดเก็บ/ทิ้ง
+async function updateDisposalStatus(itemId, newDisposalStatus) {
+  try {
+    console.log(`Updating disposal for ${itemId} to ${newDisposalStatus}`);
+     // TODO: เมื่อมี Lambda สำหรับอัปเดตจริง ให้ปลดคอมเมนต์แล้วใส่ URL
+     const LAMBDA_UPDATE_DISPOSAL_URL = "https://<your-disposal-update-lambda>/";
+     await fetch(LAMBDA_UPDATE_DISPOSAL_URL, {
+      method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ item_id: itemId, new_disposal_status: newDisposalStatus })
+     });
+  } catch (e) {
+    console.error(e);
+    alert('อัปเดตการจัดเก็บ/ทิ้งไม่สำเร็จ');
+  } finally {
+    fetchFromLambda({ search_mode: "admin" });
+  }
+}
+
+    // ⭐️ 4. ฟังก์ชัน Filter (เรียก Lambda)
+    function applyFilters() {
       const statusFilter = document.getElementById("statusFilter")?.value || '';
-      const expiryFilter = document.getElementById("expiryFilter")?.value || '';
+      const dateFilter = document.getElementById("expiryFilter")?.value || ''; 
 
-      const all = await loadAllItemsFromSheet();
-      const filtered = all.filter(item => {
-        let isStatusMatch = true;
-        if (statusFilter) {
-          const itemStatusClass = getStatusClass(item);
-          isStatusMatch = itemStatusClass === statusFilter;
-        }
-
-        let isExpiryMatch = true;
-        if (expiryFilter) {
-          if (!item.date) {
-            isExpiryMatch = false;
-          } else {
-            const foundDate = new Date(item.date);
-            const filterDate = new Date(expiryFilter);
-            const expiryDate = new Date(foundDate);
-            expiryDate.setDate(expiryDate.getDate() + 90);
-            isExpiryMatch = expiryDate <= filterDate;
-          }
-        }
-
-        return isStatusMatch && isExpiryMatch;
-      });
-
-      renderAdminTable(filtered);
+      const payload = {
+        search_mode: "admin",  // สำคัญ: ให้ Lambda ไม่บังคับ filter FOUND_ITEM
+        date: dateFilter || undefined,
+        status: statusFilter || undefined
+      };
+      fetchFromLambda(payload);
     }
 
-    // แสดงข้อมูลครั้งแรก
-    document.addEventListener('DOMContentLoaded', applyFilters);
-  </script>
+    // ⭐️ 5. เมื่อหน้าโหลด ให้ดึงข้อมูลทั้งหมด (Admin)
+      document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById("statusFilter").addEventListener("change", applyFilters);
+        document.getElementById("expiryFilter").addEventListener("change", applyFilters);
+
+        // โหลดข้อมูลทั้งหมด (Admin) ครั้งแรก
+        fetchFromLambda({ search_mode: "admin" });
+        
+        document.getElementById("adminTableBody").addEventListener('click', (event) => {
+             if (event.target.matches('button.update-status-btn')) {
+                 const itemId = event.target.dataset.itemId;
+                 const newStatus = event.target.dataset.newStatus;
+                 updateItemStatus(itemId, newStatus);
+             }
+             // etc. for disposal status button
+        });
+        
+    });
+ </script>
 </body>
 </html>
