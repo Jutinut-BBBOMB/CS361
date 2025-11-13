@@ -291,6 +291,19 @@
 
     <!-- Filter Section -->
     <div class="filter-section">
+      <select id="typeFilter">
+        <option value="">-- เลือกประเภทการแจ้ง --</option>
+        <option value="FOUND_ITEM">พบของ</option>
+        <option value="LOST_REPORT">แจ้งของหาย</option>
+      </select>
+      <select id="categoryFilter">
+        <option value="">-- เลือกหมวดหมู่ --</option>
+        <option value="บัตร">บัตร</option>
+        <option value="โทรศัพท์">โทรศัพท์</option>
+        <option value="อุปกรณ์อิเล็กทรอนิกส์">อุปกรณ์อิเล็กทรอนิกส์</option>
+        <option value="เครื่องเขียน">เครื่องเขียน</option>
+        <option value="อื่น ๆ">อื่น ๆ</option>
+      </select>
       <select id="statusFilter">
         <option value="">-- เลือกสถานะ --</option>
         <option value="waiting">รอมารับคืน (Waiting for pick up)</option>
@@ -527,11 +540,15 @@ async function updateDisposalStatus(itemId, newDisposalStatus) {
 
     // ⭐️ 4. ฟังก์ชัน Filter (เรียก Lambda)
     function applyFilters() {
+      const typeFilter = document.getElementById("typeFilter")?.value || '';
+      const categoryFilter = document.getElementById("categoryFilter")?.value || '';
       const statusFilter = document.getElementById("statusFilter")?.value || '';
       const dateFilter = document.getElementById("expiryFilter")?.value || ''; 
 
       const payload = {
         search_mode: "admin",  // สำคัญ: ให้ Lambda ไม่บังคับ filter FOUND_ITEM
+        item_type: typeFilter || undefined,
+        category: categoryFilter || undefined,
         date: dateFilter || undefined,
         status: statusFilter || undefined
       };
@@ -540,6 +557,8 @@ async function updateDisposalStatus(itemId, newDisposalStatus) {
 
     // ⭐️ 5. เมื่อหน้าโหลด ให้ดึงข้อมูลทั้งหมด (Admin)
       document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById("typeFilter").addEventListener("change", applyFilters);
+        document.getElementById("categoryFilter").addEventListener("change", applyFilters);
         document.getElementById("statusFilter").addEventListener("change", applyFilters);
         document.getElementById("expiryFilter").addEventListener("change", applyFilters);
 
