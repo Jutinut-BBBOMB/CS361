@@ -282,6 +282,11 @@
         font-weight: 600;
         min-width: 100px;
       }
+
+      th.head1 { background: #ffe4e1; color: #000; }
+      th.head2 { background: #e6f4ea; color: #000; }
+      th.head3 { background: #f9eedf; color: #000; }
+      th.head4 { background: #ebedfa; color: #000; }
     }
   </style>
 </head>
@@ -291,28 +296,26 @@
 
     <!-- Filter Section -->
     <div class="filter-section">
-      <select id="typeFilter">
-        <option value="">-- เลือกประเภทการแจ้ง --</option>
-        <option value="FOUND_ITEM">พบของ</option>
-        <option value="LOST_REPORT">แจ้งของหาย</option>
-      </select>
-      <select id="categoryFilter">
-        <option value="">-- เลือกหมวดหมู่ --</option>
+            <select id="categoryFilter">
+        <option value="">-- ทุกหมวดหมู่ --</option>
         <option value="บัตร">บัตร</option>
         <option value="โทรศัพท์">โทรศัพท์</option>
         <option value="อุปกรณ์อิเล็กทรอนิกส์">อุปกรณ์อิเล็กทรอนิกส์</option>
         <option value="เครื่องเขียน">เครื่องเขียน</option>
-        <option value="อื่น ๆ">อื่น ๆ</option>
+        <option value="อื่นๆ">อื่นๆ</option>
       </select>
+
       <select id="statusFilter">
-        <option value="">-- เลือกสถานะ --</option>
-        <option value="waiting">รอมารับคืน (Waiting for pick up)</option>
-        <option value="received">รับคืนแล้ว (Received)</option>
-        <option value="expiring">ใกล้ถึง 3 เดือน (Expiring)</option>
-        <option value="expired">หมดอายุแล้ว (Expired)</option>
+        <option value="">-- ทุกสถานะ --</option>
+        <option value="แจ้งแล้ว" class="head1">แจ้งแล้ว</option>
+        <option value="รอรับคืน" class="head2">รอรับคืน (Waiting for pick up)</option>
+        <option value="คืนเจ้าของแล้ว" class="head3">คืนเจ้าของแล้ว (Received)</option>
+        <option value="หมดอายุ" class="head4">หมดอายุ (Expired)</option>
       </select>
-      <input type="date" id="expiryFilter" placeholder="กรองตามวันที่หมดอายุ">
-      <button onclick="applyFilters()">กรองข้อมูล</button>
+      
+      <input type="date" id="expiryFilter" placeholder="กรองตามวันที่" />
+      
+      <button onclick="applyFilters()">ค้นหา</button>
     </div>
 
     <div class="table-wrapper">
@@ -335,18 +338,18 @@
         <thead>
           <tr>
             <th>ลำดับ</th>
-            <th>ประเภทการแจ้ง (Type)</th>
-            <th>หมวดหมู่ / สิ่งของที่หาย (Category)</th>
-            <th>รูปภาพ (Picture)</th>
-            <th>ยี่ห้อ / ชื่อในบัตร (Brand)</th>
-            <th>รุ่น / เลขบัตร (Model)</th>
-            <th>รายละเอียดเพิ่มเติม (More Details)</th>
-            <th>วันที่ (Date)</th>
-            <th>เวลา (Time)</th>
-            <th>สถานที่พบ (Location)</th>
-            <th>รายละเอียดผู้แจ้ง (Reporter Details)</th>
-            <th>การจัดเก็บและครบกำหนด (Record)</th>
-            <th>สถานะ (Status)</th>
+            <th>ประเภทการแจ้ง<br>(Type)</th>
+            <th>หมวดหมู่<br>(Category)</th>
+            <th>รูปภาพ<br>(Picture)</th>
+            <th>ยี่ห้อ/รุ่น<br>(Brand)</th>
+            <th>รายละเอียด<br>(Details)</th>
+            <th>วันที่<br>(Date)</th>
+            <th>เวลา<br>(Time)</th>
+            <th>สถานที่<br>(Location)</th>
+            <th>ผู้แจ้ง<br>(Reporter)</th>
+            <th>Case ID</th>
+            <th>สถานะ<br>(Status)</th>
+            <th>การจัดการ<br>(Actions)</th>
           </tr>
         </thead>
         <tbody id="adminTableBody">
@@ -357,122 +360,117 @@
   </div>
 
   <script src="liff.js"></script>
-  <script>
-      const LAMBDA_SEARCH_URL = "https://vnzvfki24e5re2d6fh3k6bmq2a0ddolc.lambda-url.us-east-1.on.aws/";
-      const LAMBDA_LOST_URL = "https://7ipwb7gq4jr23b5to624urel3q0pxdcz.lambda-url.us-east-1.on.aws/";
-      const LIFF_ID = "2008305063-P2NpboxX";
+ <script>
+    const LAMBDA_SEARCH_URL = "https://vnzvfki24e5re2d6fh3k6bmq2a0ddolc.lambda-url.us-east-1.on.aws/";
+    const LAMBDA_LOST_URL = "https://7ipwb7gq4jr23b5to624urel3q0pxdcz.lambda-url.us-east-1.on.aws/";
+    const LAMBDA_ADMIN_URL = "https://zcxho4nxfpp67wjayunn7oicza0vxplm.lambda-url.us-east-1.on.aws/"; 
+    const LIFF_ID = "2008305063-P2NpboxX";
 
-    // (ฟังก์ชัน formatDate, formatTime... ถ้าต้องการใช้)
     function formatDate(isoString) {
-      // ... (โค้ด formatDate)
       if (!isoString) return '-';
       try {
         const date = new Date(isoString);
         return isNaN(date.getTime()) ? '-' : date.toISOString().split('T')[0];
       } catch (e) { return '-'; }
     }
+    
     function formatTime(isoString) {
-      // ... (โค้ด formatTime)
-       if (!isoString) return '-';
-       try {
-         const date = new Date(isoString);
-         return isNaN(date.getTime()) ? '-' : date.toTimeString().split(' ')[0].substring(0, 5);
-       } catch (e) { return '-'; }
+      if (!isoString) return '-';
+      try {
+        const date = new Date(isoString);
+        return isNaN(date.getTime()) ? '-' : date.toTimeString().split(' ')[0].substring(0, 5);
+      } catch (e) { return '-'; }
     }
 
-    /**
-     * ⭐️ 2. ฟังก์ชัน render ตารางสำหรับ Admin (แสดงผล 2 แบบ)
-     */
     function renderAdminTable(items) {
       const tbody = document.getElementById("adminTableBody");
       if (!tbody) return;
-      
-      items.sort((a, b) => (b.reportTimestamp || '').localeCompare(a.reportTimestamp || ''));
+
+      items.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
 
       if (items.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;">ไม่พบข้อมูล</td></tr>`;
-          return;
+        tbody.innerHTML = `<tr><td colspan="13" style="text-align:center; padding: 40px;">ไม่มีข้อมูล</td></tr>`;
+        return;
       }
 
       tbody.innerHTML = items.map((item, index) => {
+        const isFound = item.item_type === 'FOUND';
+        const isLost = item.item_type === 'LOST';
         
-        // --- แสดงผลสำหรับ 'LOST_REPORT' ---
-        if (item.item_type === 'LOST_REPORT') {
-            const status = item.status || 'lost_reported';
-            return `
-            <tr>
-              <td data-label="ลำดับ">${index + 1}</td>
-              <td data-label="ประเภทการแจ้ง (Type)">
-                <span style="display:inline-block;padding:4px 8px;border-radius:4px;font-weight:600;background-color:#fef3c7;color:#92400e;">
-                  แจ้งของหาย
-                </span>
-              </td>
-              <td data-label="หมวดหมู่ / สิ่งของที่หาย (Category)">${item.itemDescription || "-"}</td>
-              <td data-label="รูปภาพ (Picture)">
-                ${item.imageUrl ? `<a href="${item.imageUrl}" target="_blank"><img src="${item.imageUrl}" alt="item" style="width:50px;height:50px;object-fit:cover;"></a>` : 'ไม่มี'}
-              </td>
-              <td data-label="ยี่ห้อ / ชื่อในบัตร (Brand)">${item.brandOrId || "-"}</td>
-              <td data-label="รุ่น / เลขบัตร (Model)">-</td>
-              <td data-label="รายละเอียดเพิ่มเติม (More Details)">${item.distinguishingFeatures || "-"}</td>
-              <td data-label="วันที่ (Date)">${item.lostDate || "-"}</td>
-              <td data-label="เวลา (Time)">${item.lostTime || "-"}</td>
-              <td data-label="สถานที่พบ (Location)">${item.lostLocation || "-"}</td>
-              <td data-label="รายละเอียดผู้แจ้ง (Reporter Details)">
-                <div><strong>ชื่อ:</strong> ${item.reporterName || "-"}</div>
-                <div><strong>โทร:</strong> ${item.reporterContact || "-"}</div>
-                <div><strong>รหัสนักศึกษา:</strong> ${item.reporterStudentId || "-"}</div>
-              </td>
-              <td data-label="การจัดเก็บและครบกำหนด (Record)">
-                <span style="color:#6b7280;font-weight:bold;">${item.case_id || 'N/A'}</span>
-              </td>
-              <td data-label="สถานะ (Status)">
-                <span class="status waiting">${status === 'lost_reported' ? 'กำลังตามหา' : status}</span>
-                </td>
-            </tr>
-          `;
-        } 
-        
-        // --- (Default) แสดงผล 'FOUND_ITEM' ---
-        const statusClassMap = { 'reported': 'waiting', 'claimed': 'received', 'expired': 'expired' };
-        const statusTextMap = { 'reported': 'รอรับคืน', 'claimed': 'รับคืนแล้ว', 'expired': 'หมดอายุ' };
-        const status = item.status || 'reported';
+        let typeDisplay = '';
+        if (isFound) {
+          typeDisplay = `<span style="display:inline-block;padding:4px 8px;border-radius:4px;font-weight:600;background-color:#dcfce7;color:#166534;">พบของ</span>`;
+        } else if (isLost) {
+          typeDisplay = `<span style="display:inline-block;padding:4px 8px;border-radius:4px;font-weight:600;background-color:#fee2e2;color:#991b1b;">ของหาย</span>`;
+        } else {
+          typeDisplay = '-';
+        }
+
+        let displayBrandInfo = item.brand || '-';
+
+        const statusOptions = ['แจ้งแล้ว', 'รอรับคืน', 'คืนเจ้าของแล้ว', 'หมดอายุ'];
+        const statusButtons = statusOptions.map(status => {
+          const isActive = item.status === status;
+          const bgColor = isActive ? '#10b981' : '#e5e7eb';
+          const textColor = isActive ? 'white' : '#374151';
+          const cursor = isActive ? 'default' : 'pointer';
+          
+          return `<button 
+            onclick="${isActive ? '' : `changeStatus('${item.item_id}', '${status}')`}" 
+            style="
+              padding:4px 8px;
+              margin:2px;
+              background:${bgColor};
+              color:${textColor};
+              border:none;
+              border-radius:4px;
+              cursor:${cursor};
+              font-size:0.75rem;
+              font-weight:${isActive ? 'bold' : 'normal'};
+            "
+            ${isActive ? 'disabled' : ''}
+          >${status}</button>`;
+        }).join('');
+
         return `
-        <tr>
-          <td data-label="ลำดับ">${index + 1}</td>
-          <td data-label="ประเภทการแจ้ง (Type)">
-            <span style="display:inline-block;padding:4px 8px;border-radius:4px;font-weight:600;background-color:#dcfce7;color:#166534;">
-              พบของ
-            </span>
-          </td>
-          <td data-label="หมวดหมู่ / สิ่งของที่หาย (Category)">${item.category || "-"}</td>
-          <td data-label="รูปภาพ (Picture)">
-            ${item.imageUrl ? `<a href="${item.imageUrl}" target="_blank"><img src="${item.imageUrl}" alt="item" style="width:50px;height:50px;object-fit:cover;"></a>` : 'ไม่มี'}
-          </td>
-          <td data-label="ยี่ห้อ / ชื่อในบัตร (Brand)">${item.brandName || "-"}</td>
-          <td data-label="รุ่น / เลขบัตร (Model)">${item.itemIdNumber || "-"}</td>
-          <td data-label="รายละเอียดเพิ่มเติม (More Details)">${item.details || "-"}</td>
-          <td data-label="วันที่ (Date)">${item.foundDate || "-"}</td>
-          <td data-label="เวลา (Time)">${item.foundTime || "-"}</td>
-          <td data-label="สถานที่พบ (Location)">${item.foundLocation || "-"}</td>
-          <td data-label="รายละเอียดผู้แจ้ง (Reporter Details)">
-            <div><strong>ชื่อ:</strong> ${item.reporterName || "-"}</div>
-            <div><strong>โทร:</strong> ${item.reporterContact || "-"}</div>
-            <div><strong>รหัสนักศึกษา:</strong> ${item.reporterStudentId || "-"}</div>
-          </td>
-          <td data-label="การจัดเก็บและครบกำหนด (Record)">
-            <span style="color:#6b7280;font-weight:bold;">${item.case_id || 'N/A'}</span>
-          </td>
-          <td data-label="สถานะ (Status)">
-            <span class="status ${statusClassMap[status] || 'waiting'}">${statusTextMap[status] || 'รอรับคืน'}</span>
+          <tr>
+            <td data-label="ลำดับ">${index + 1}</td>
+            <td data-label="ประเภทการแจ้ง">${typeDisplay}</td>
+            <td data-label="หมวดหมู่">${item.category || "-"}</td>
+            <td data-label="รูปภาพ">
+              ${item.image_url ? `<a href="${item.image_url}" target="_blank"><img src="${item.image_url}" alt="item" style="width:50px;height:50px;object-fit:cover;"></a>` : 'ไม่มี'}
             </td>
-        </tr>
-      `;
+            <td data-label="ยี่ห้อ/รุ่น">${displayBrandInfo}</td>
+            <td data-label="รายละเอียด">${item.details || "-"}</td>
+            <td data-label="วันที่">${item.date || "-"}</td>
+            <td data-label="เวลา">${item.time || "-"}</td>
+            <td data-label="สถานที่">${item.location || "-"}</td>
+            <td data-label="ผู้แจ้ง">
+              <div style="font-size:0.875rem;">
+                <div><strong>ชื่อ:</strong> ${item.reporter_name || '-'}</div>
+                <div><strong>เบอร์:</strong> ${item.reporter_contact || '-'}</div>
+                ${item.reporter_student_id ? `<div><strong>รหัส:</strong> ${item.reporter_student_id}</div>` : ''}
+              </div>
+            </td>
+            <td data-label="Case ID">
+              <span style="color:#6b7280;font-weight:bold;font-family:monospace;">${item.case_id || 'N/A'}</span>
+            </td>
+            <td data-label="สถานะ">
+              <div style="display:flex;flex-direction:column;gap:2px;">
+                ${statusButtons}
+              </div>
+            </td>
+            <td data-label="การจัดการ">
+              <button onclick="editItem('${item.item_id}')" style="padding:6px 12px;background:#3b82f6;color:white;border:none;border-radius:4px;cursor:pointer;margin-bottom:4px;width:100%;">แก้ไข</button>
+              <button onclick="deleteItem('${item.item_id}')" style="padding:6px 12px;background:#ef4444;color:white;border:none;border-radius:4px;cursor:pointer;width:100%;">ลบ</button>
+            </td>
+          </tr>
+        `;
       }).join("");
+
+      console.log(`✅ Displayed ${items.length} items`);
     }
 
-    /**
-     * ⭐️ 3. ฟังก์ชันสำหรับเรียก Lambda (ตัวเดียว)
-     */
     async function fetchFromLambda(payload) {
       const tbody = document.getElementById("adminTableBody");
       tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;">กำลังค้นหา...</td></tr>`;
@@ -487,6 +485,8 @@
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const result = await response.json();
 
+        console.log('📥 Lambda response:', result);
+
         if (result.status === 'success' && result.count > 0) {
           renderAdminTable(result.items);
         } else {
@@ -497,84 +497,191 @@
         tbody.innerHTML = `<tr><td colspan="13" style="color:red; text-align:center;">เกิดข้อผิดพลาด: ${error.message}</td></tr>`;
       }
     }
-    
 
-// อัปเดตสถานะสิ่งของ
-async function updateItemStatus(itemId, newStatus) {
-  try {
-    console.log(`Updating item ${itemId} to ${newStatus}`);
-     // TODO: เมื่อมี Lambda สำหรับอัปเดตจริง ให้ปลดคอมเมนต์แล้วใส่ URL
-     const LAMBDA_UPDATE_URL = "https://<your-update-lambda>/";
-     await fetch(LAMBDA_UPDATE_URL, {
-       method: 'POST',
-       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ item_id: itemId, new_status: newStatus })
-     });
-  } catch (e) {
-    console.error(e);
-    alert('อัปเดตสถานะไม่สำเร็จ');
-  } finally {
-    // โหลดข้อมูลใหม่เสมอ
-    fetchFromLambda({ search_mode: "admin" });
-  }
-}
+    async function changeStatus(itemId, newStatus) {
+      try {
+        console.log(`Changing status for ${itemId} to ${newStatus}`);
+        
+        const response = await fetch(LAMBDA_ADMIN_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'change_status',
+            item_id: itemId,
+            status: newStatus
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+          console.log('✅ Status changed successfully');
+          applyFilters();
+        } else {
+          alert('❌ เกิดข้อผิดพลาด: ' + result.error);
+        }
+        
+      } catch (error) {
+        console.error('Error changing status:', error);
+        alert('❌ เกิดข้อผิดพลาดในการเปลี่ยนสถานะ: ' + error.message);
+      }
+    }
 
-// อัปเดตสถานะการจัดเก็บ/ทิ้ง
-async function updateDisposalStatus(itemId, newDisposalStatus) {
-  try {
-    console.log(`Updating disposal for ${itemId} to ${newDisposalStatus}`);
-     // TODO: เมื่อมี Lambda สำหรับอัปเดตจริง ให้ปลดคอมเมนต์แล้วใส่ URL
-     const LAMBDA_UPDATE_DISPOSAL_URL = "https://<your-disposal-update-lambda>/";
-     await fetch(LAMBDA_UPDATE_DISPOSAL_URL, {
-      method: 'POST',
-       headers: { 'Content-Type': 'application/json' },
-       body: JSON.stringify({ item_id: itemId, new_disposal_status: newDisposalStatus })
-     });
-  } catch (e) {
-    console.error(e);
-    alert('อัปเดตการจัดเก็บ/ทิ้งไม่สำเร็จ');
-  } finally {
-    fetchFromLambda({ search_mode: "admin" });
-  }
-}
+    async function editItem(itemId) {
+      try {
+        const response = await fetch(LAMBDA_SEARCH_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ search_mode: 'item_id', item_id: itemId })
+        });
+        
+        const result = await response.json();
+        if (result.status !== 'success' || result.count === 0) {
+          alert('❌ ไม่พบข้อมูล');
+          return;
+        }
+        
+        const item = result.items[0];
+        
+        const newLocation = prompt('📍 สถานที่:', item.location || '');
+        if (newLocation === null) return;
+        
+        const newDetails = prompt('📝 รายละเอียด:', item.details || '');
+        if (newDetails === null) return;
+        
+        const newBrand = prompt('🏷️ ยี่ห้อ/รุ่น:', item.brand || '');
+        if (newBrand === null) return;
+        
+        const newDate = prompt('📅 วันที่ (YYYY-MM-DD):', item.date || '');
+        if (newDate === null) return;
+        
+        const newTime = prompt('🕐 เวลา (HH:MM):', item.time || '');
+        if (newTime === null) return;
+        
+        const updateResponse = await fetch(LAMBDA_ADMIN_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'update',
+            item_id: itemId,
+            updates: {
+              location: newLocation,
+              details: newDetails,
+              brand: newBrand,
+              date: newDate,
+              time: newTime
+            }
+          })
+        });
+        
+        const updateResult = await updateResponse.json();
+        
+        if (updateResult.status === 'success') {
+          alert('✅ แก้ไขข้อมูลสำเร็จ!');
+          applyFilters();
+        } else {
+          alert('❌ เกิดข้อผิดพลาด: ' + updateResult.error);
+        }
+        
+      } catch (error) {
+        console.error('Error editing item:', error);
+        alert('❌ เกิดข้อผิดพลาดในการแก้ไข: ' + error.message);
+      }
+    }
 
-    // ⭐️ 4. ฟังก์ชัน Filter (เรียก Lambda)
+    async function deleteItem(itemId) {
+      const confirmed = confirm(
+        '⚠️ ต้องการลบรายการนี้หรือไม่?\n\n' +
+        '❗️ การดำเนินการนี้ไม่สามารถย้อนกลับได้\n' +
+        '❗️ รูปภาพใน S3 จะถูกลบด้วย'
+      );
+      
+      if (!confirmed) return;
+      
+      try {
+        const response = await fetch(LAMBDA_ADMIN_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'delete',
+            item_id: itemId
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+          alert('✅ ' + result.message);
+          applyFilters();
+        } else {
+          alert('❌ เกิดข้อผิดพลาด: ' + result.error);
+        }
+        
+      } catch (error) {
+        console.error('Error deleting item:', error);
+        alert('❌ เกิดข้อผิดพลาดในการลบ: ' + error.message);
+      }
+    }
+
+    /**
+     * ⭐️ ฟังก์ชัน Filter (เพิ่ม categoryFilter)
+     */
     function applyFilters() {
-      const typeFilter = document.getElementById("typeFilter")?.value || '';
-      const categoryFilter = document.getElementById("categoryFilter")?.value || '';
-      const statusFilter = document.getElementById("statusFilter")?.value || '';
-      const dateFilter = document.getElementById("expiryFilter")?.value || ''; 
+      const categoryFilter = document.getElementById("categoryFilter")?.value;  // ✅ เพิ่มใหม่
+      const statusFilter = document.getElementById("statusFilter")?.value;
+      const dateFilter = document.getElementById("expiryFilter")?.value;
+
+      console.log('🔍 Filter values:', { 
+        category: categoryFilter || '(ทั้งหมด)',
+        status: statusFilter || '(ทั้งหมด)', 
+        date: dateFilter || '(ทั้งหมด)' 
+      });
 
       const payload = {
-        search_mode: "admin",  // สำคัญ: ให้ Lambda ไม่บังคับ filter FOUND_ITEM
-        item_type: typeFilter || undefined,
-        category: categoryFilter || undefined,
-        date: dateFilter || undefined,
-        status: statusFilter || undefined
+        search_mode: "admin"
       };
+      
+      // ✅ เพิ่ม category filter
+      if (categoryFilter && categoryFilter !== '') {
+        payload.keyword = categoryFilter;  // ใช้ keyword สำหรับ category
+      }
+      
+      if (statusFilter && statusFilter !== '') {
+        payload.status = statusFilter;
+      }
+      
+      if (dateFilter && dateFilter !== '') {
+        payload.date = dateFilter;
+      }
+      
+      console.log('📤 Sending payload:', payload);
       fetchFromLambda(payload);
     }
 
-    // ⭐️ 5. เมื่อหน้าโหลด ให้ดึงข้อมูลทั้งหมด (Admin)
-      document.addEventListener('DOMContentLoaded', () => {
-        document.getElementById("typeFilter").addEventListener("change", applyFilters);
-        document.getElementById("categoryFilter").addEventListener("change", applyFilters);
-        document.getElementById("statusFilter").addEventListener("change", applyFilters);
-        document.getElementById("expiryFilter").addEventListener("change", applyFilters);
+    /**
+     * ⭐️ เมื่อหน้าโหลด
+     */
+    document.addEventListener('DOMContentLoaded', () => {
+      const categorySelect = document.getElementById("categoryFilter");  // ✅ เพิ่มใหม่
+      const statusSelect = document.getElementById("statusFilter");
+      const dateInput = document.getElementById("expiryFilter");
+      
+      // ✅ เพิ่ม Event Listener สำหรับ categoryFilter
+      if (categorySelect) {
+        categorySelect.addEventListener("change", applyFilters);
+      }
+      
+      if (statusSelect) {
+        statusSelect.addEventListener("change", applyFilters);
+      }
+      
+      if (dateInput) {
+        dateInput.addEventListener("change", applyFilters);
+      }
 
-        // โหลดข้อมูลทั้งหมด (Admin) ครั้งแรก
-        fetchFromLambda({ search_mode: "admin" });
-        
-        document.getElementById("adminTableBody").addEventListener('click', (event) => {
-             if (event.target.matches('button.update-status-btn')) {
-                 const itemId = event.target.dataset.itemId;
-                 const newStatus = event.target.dataset.newStatus;
-                 updateItemStatus(itemId, newStatus);
-             }
-             // etc. for disposal status button
-        });
-        
+      console.log('🚀 Loading all items...');
+      fetchFromLambda({ search_mode: "admin" });
     });
- </script>
+  </script>
 </body>
 </html>
