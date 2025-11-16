@@ -90,13 +90,13 @@ def lambda_handler(event, context):
             'location': location,
             'date': date,
             'time': time,
-            'status': 'แจ้งแล้ว',
+            'status': 'รอรับคืน',
             'reporter_name': reporter_name,
             'reporter_contact': reporter_contact,
             'reporter_student_id': reporter_student_id,
             'created_at': timestamp,
             'updated_at': timestamp,
-            'gsi1_pk': 'STATUS#แจ้งแล้ว',
+            'gsi1_pk': 'STATUS#รอรับคืน',
             'gsi1_sk': timestamp,
             'gsi2_pk': f'CATEGORY#{category}',
             'gsi2_sk': timestamp
@@ -124,5 +124,3 @@ def lambda_handler(event, context):
             'headers': CORS_HEADERS,
             'body': json.dumps({'error': 'Failed to save data'})
         }
-
-
