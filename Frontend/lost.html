@@ -320,7 +320,7 @@
       const lambdaResult = await sendToLambda(data);
 
 
-      showStatus(`✅ ส่งข้อมูลแจ้งของหายเรียบร้อย! (Case ID: ${lambdaResult.caseId || 'N/A'})`, 'success');
+      showStatus(`✅ ส่งข้อมูลแจ้งของหายเรียบร้อย!`, 'success');
       
       // ล้างฟอร์ม
       document.getElementById("itemName").value = "";
