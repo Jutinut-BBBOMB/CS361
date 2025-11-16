@@ -398,7 +398,7 @@
             const result = await sendToLambda(data);
 
             if (result.status === 'success') {
-                showStatus(`✅ ส่งข้อมูลพบของเรียบร้อย!\n\nCase ID: ${result.case_id || 'N/A'}`, 'success');
+                showStatus(`✅ ส่งข้อมูลพบของเรียบร้อย!`, 'success');
 
                 // ล้างฟอร์ม
                 document.getElementById("category").value = "";
