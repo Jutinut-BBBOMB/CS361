@@ -7,7 +7,7 @@ import datetime
 import secrets
 
 DYNAMODB_TABLE_NAME = os.environ.get('DYNAMODB_TABLE_NAME', 'Items_TU')
-S3_BUCKET_NAME = os.environ.get('S3_BUCKET_NAME', 'your-bucket-name')
+S3_BUCKET_NAME = os.environ.get('S3_BUCKET_NAME', 'adminwebtulostfound')
 
 dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
 s3 = boto3.client('s3', region_name='us-east-1')
@@ -124,3 +124,4 @@ def lambda_handler(event, context):
             'headers': CORS_HEADERS,
             'body': json.dumps({'error': 'Failed to save data'})
         }
+
